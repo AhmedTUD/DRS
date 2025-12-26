@@ -112,7 +112,8 @@ def dashboard():
     total_reports = Report.query.count()
     # Count unique branches by code (actual branches, not duplicates per supervisor)
     total_branches = db.session.query(db.func.count(db.func.distinct(Branch.code))).scalar() or 0
-    total_regions = Region.query.count()   # Changed from Area to Region
+    # Count unique regions by name (actual regions, not duplicates per supervisor)
+    total_regions = db.session.query(db.func.count(db.func.distinct(Region.name))).scalar() or 0
     
     # Recent reports with timezone conversion
     recent_reports_raw = Report.query.order_by(Report.created_at.desc()).limit(5).all()
@@ -140,7 +141,8 @@ def get_dashboard_stats():
         total_reports = db.session.query(db.func.count(Report.id)).scalar() or 0
         # Count unique branches by code (actual branches, not duplicates per supervisor)
         total_branches = db.session.query(db.func.count(db.func.distinct(Branch.code))).scalar() or 0
-        total_regions = db.session.query(db.func.count(Region.id)).scalar() or 0   # Changed from Area
+        # Count unique regions by name (actual regions, not duplicates per supervisor)
+        total_regions = db.session.query(db.func.count(db.func.distinct(Region.name))).scalar() or 0
         
         return jsonify({
             'success': True,
