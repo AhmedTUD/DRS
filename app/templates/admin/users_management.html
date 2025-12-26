@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Users Management - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">
+                    <i class="fas fa-users text-primary me-2"></i>
+                    Users Management
+                </h1>
+                <div>
+                    <a href="{{ url_for('admin.admin_users') }}" class="btn btn-info me-2">
+                        <i class="fas fa-user-shield me-2"></i>Admin Users
+                    </a>
+                    <button class="btn btn-primary" id="createUserBtn">
+                        <i class="fas fa-user-plus me-2"></i>Create New User
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Stats -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="input-group">
+                <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" class="form-control" id="searchUsers" 
+                       placeholder="Search by SPVR name, code, or username...">
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <span class="badge bg-primary fs-6" id="userCount">0 users</span>
+        </div>
+    </div>
+
+    <!-- Users List -->
+    <div class="row">
+        <div class="col-12">
+            <div id="usersContainer">
+                <div class="text-center py-5" id="loadingUsers">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-3">Loading users...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Modal -->
+<div class="modal fade" id="userModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userModalTitle">Create New User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId" name="userId">
+                    
+                    <!-- Basic Information -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">
+                                <i class="fas fa-user me-2"></i>Basic Information
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="spvrName" class="form-label">SPVR Name *</label>
+                                    <input type="text" class="form-control" id="spvrName" name="spvrName" 
+                                           maxlength="100" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="spvrCode" class="form-label">SPVR Code *</label>
+                                    <input type="text" class="form-control" id="spvrCode" name="spvrCode" 
+                                           maxlength="50" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="username" class="form-label">Username *</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="password" class="form-label">Password *</label>
+                                    <input type="password" class="form-control" id="password" name="password">
+                                    <div class="form-text" id="passwordHelp" style="display: none;">
+                                        Leave blank to keep existing password when editing.
+                                    </div>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Regions and Shops -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Regions & Shops
+                                </h6>
+                                <button type="button" class="btn btn-sm btn-success" id="addRegionBtn">
+                                    <i class="fas fa-plus me-2"></i>Add Region
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="regionsContainer">
+                                <!-- Regions will be dynamically added here -->
+                            </div>
+                            
+                            <div id="noRegionsMessage" class="text-center py-4 text-muted">
+                                <i class="fas fa-map-marker-alt fa-3x mb-3"></i>
+                                <p>No regions added yet. Click "Add Region" to get started.</p>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="saveUserBtn">
+                    <i class="fas fa-save me-2"></i>Save User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Region Modal -->
+<div class="modal fade" id="regionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="regionModalTitle">Add Region</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="regionForm">
+                    <input type="hidden" id="regionIndex" name="regionIndex">
+                    
+                    <div class="mb-3">
+                        <label for="regionName" class="form-label">Region Name *</label>
+                        <input type="text" class="form-control" id="regionName" name="regionName" 
+                               maxlength="100" required>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="saveRegionBtn">
+                    <i class="fas fa-save me-2"></i>Save Region
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shop Modal -->
+<div class="modal fade" id="branchModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="branchModalTitle">Add Shop</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="branchForm">
+                    <input type="hidden" id="branchRegionIndex" name="branchRegionIndex">
+                    <input type="hidden" id="branchIndex" name="branchIndex">
+                    
+                    <div class="mb-3">
+                        <label for="branchName" class="form-label">Shop Name *</label>
+                        <input type="text" class="form-control" id="branchName" name="branchName" 
+                               maxlength="100" required>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="branchCode" class="form-label">Shop Code *</label>
+                        <input type="text" class="form-control" id="branchCode" name="branchCode" 
+                               maxlength="50" required>
+                        <div class="form-text">Unique code for this shop</div>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="branchGovernorate" class="form-label">Governorate</label>
+                        <input type="text" class="form-control" id="branchGovernorate" name="branchGovernorate" 
+                               maxlength="100" placeholder="Enter governorate name">
+                        <div class="form-text">Enter the governorate for this shop</div>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="saveBranchBtn">
+                    <i class="fas fa-save me-2"></i>Save Shop
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
+<script src="{{ url_for('static', filename='js/users-management-new.js') }}"></script>
+
+<style>
+.user-card {
+    transition: all 0.2s ease-in-out;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+}
+
+.user-card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-color: #007bff;
+    transform: translateY(-2px);
+}
+
+.region-card {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.region-card:hover {
+    border-color: #28a745;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+}
+
+.branch-item {
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.branch-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+.invalid-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875em;
+    color: #dc3545;
+}
+
+.btn-group .btn {
+    border-radius: 0.375rem;
+    margin-right: 0.25rem;
+}
+
+.btn-group .btn:last-child {
+    margin-right: 0;
+}
+
+.badge {
+    font-size: 0.875em;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+}
+</style>
+
+{% endblock %}

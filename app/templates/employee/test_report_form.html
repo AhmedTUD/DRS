@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Test Report Form - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12">
+            <h1>Test Report Form</h1>
+            <p class="text-muted">صفحة اختبار مبسطة لإنشاء التقارير</p>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('employee.create_report') }}" id="testReportForm">
+        <div class="card">
+            <div class="card-header">
+                <h5>Basic Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="branch_search" class="form-label">Branch Name *</label>
+                        <input type="text" class="form-control" id="branch_search" 
+                               placeholder="Type to search for branch..." autocomplete="off">
+                        <input type="hidden" id="branch_id" name="branch_id" required>
+                        <div id="branch_suggestions" class="dropdown-menu w-100" style="display: none;"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="branch_code" class="form-label">Branch Code</label>
+                        <input type="text" class="form-control" id="branch_code" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5>Report Data</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="samsung_sales" class="form-label">Samsung Sales</label>
+                        <textarea class="form-control" id="samsung_sales" name="samsung_sales" rows="2">Test Samsung sales data</textarea>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="competitors_sales" class="form-label">Competitors Sales</label>
+                        <textarea class="form-control" id="competitors_sales" name="competitors_sales" rows="2">Test competitors data</textarea>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="actions_taken" class="form-label">Actions Taken</label>
+                        <textarea class="form-control" id="actions_taken" name="actions_taken" rows="2">Test actions taken</textarea>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="store_member_notes" class="form-label">Store Notes</label>
+                        <textarea class="form-control" id="store_member_notes" name="store_member_notes" rows="2">Test store notes</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save me-2"></i>Submit Test Report
+            </button>
+            <a href="{{ url_for('employee.dashboard') }}" class="btn btn-secondary ms-2">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Branch search functionality
+    const branchSearch = document.getElementById('branch_search');
+    const branchSuggestions = document.getElementById('branch_suggestions');
+    const branchIdInput = document.getElementById('branch_id');
+    const branchCodeInput = document.getElementById('branch_code');
+    
+    let searchTimeout;
+    
+    branchSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 2) {
+            branchSuggestions.style.display = 'none';
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            fetch(`{{ url_for('employee.search_branches') }}?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    branchSuggestions.innerHTML = '';
+                    
+                    if (data.length > 0) {
+                        data.forEach(branch => {
+                            const item = document.createElement('a');
+                            item.className = 'dropdown-item';
+                            item.href = '#';
+                            item.innerHTML = `<strong>${branch.name}</strong><br><small class="text-muted">${branch.code} - ${branch.region}</small>`;
+                            
+                            item.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                branchSearch.value = branch.name;
+                                branchIdInput.value = branch.id;
+                                branchCodeInput.value = branch.code;
+                                branchSuggestions.style.display = 'none';
+                                
+                                // Show success message
+                                const alert = document.createElement('div');
+                                alert.className = 'alert alert-success mt-2';
+                                alert.innerHTML = `✅ Selected: ${branch.name} (${branch.code})`;
+                                branchSearch.parentNode.appendChild(alert);
+                                
+                                setTimeout(() => alert.remove(), 3000);
+                            });
+                            
+                            branchSuggestions.appendChild(item);
+                        });
+                        
+                        branchSuggestions.style.display = 'block';
+                    } else {
+                        branchSuggestions.innerHTML = '<span class="dropdown-item-text">No branches found</span>';
+                        branchSuggestions.style.display = 'block';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error searching branches:', error);
+                });
+        }, 300);
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!branchSearch.contains(e.target) && !branchSuggestions.contains(e.target)) {
+            branchSuggestions.style.display = 'none';
+        }
+    });
+    
+    // Form validation
+    document.getElementById('testReportForm').addEventListener('submit', function(e) {
+        const branchId = document.getElementById('branch_id').value;
+        
+        if (!branchId) {
+            e.preventDefault();
+            alert('Please select a branch first!');
+            return false;
+        }
+        
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+        submitBtn.disabled = true;
+        
+        console.log('Form submitted with branch_id:', branchId);
+    });
+});
+</script>
+{% endblock %}

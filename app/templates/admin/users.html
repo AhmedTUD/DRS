@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-users me-2"></i>Manage Users
+            </h1>
+            <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">
+                <i class="fas fa-user-plus me-2"></i>Create New User
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                {% if users %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>SPVR Name</th>
+                                <th>SPVR Code</th>
+                                <th>Username</th>
+                                <th>Assigned Areas</th>
+                                <th>Assigned Stores</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.employee_name }}</td>
+                                <td>{{ user.employee_code }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>
+                                    {% for area in user.assigned_areas %}
+                                        <span class="badge bg-primary me-1">{{ area.name }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <small>{{ user.assigned_stores|length }} stores</small>
+                                </td>
+                                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" 
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="Edit SPVR"
+                                           data-bs-toggle="tooltip">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('admin.delete_user', user_id=user.id) }}" 
+                                           class="btn btn-sm btn-outline-danger delete-user-btn"
+                                           title="Delete SPVR"
+                                           data-bs-toggle="tooltip"
+                                           data-user-name="{{ user.employee_name }}"
+                                           data-reports-count="{{ user.reports|length }}">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No users found</h5>
+                    <p class="text-muted">Create your first user to get started.</p>
+                    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-2"></i>Create New User
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+
+// Enhanced delete confirmation using event delegation
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.delete-user-btn')) {
+        e.preventDefault();
+        
+        const btn = e.target.closest('.delete-user-btn');
+        const userName = btn.dataset.userName;
+        const reportsCount = parseInt(btn.dataset.reportsCount);
+        
+        let message = `Are you sure you want to delete SPVR "${userName}"?`;
+        
+        if (reportsCount > 0) {
+            message += `\n\nWarning: This SPVR has ${reportsCount} report(s). `;
+            message += `The deletion may fail if reports exist. Consider reassigning reports first.`;
+        }
+        
+        if (confirm(message)) {
+            window.location.href = btn.href;
+        }
+    }
+});
+
+// Add visual feedback for button clicks
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.btn')) {
+        const btn = e.target.closest('.btn');
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            btn.style.transform = '';
+        }, 150);
+    }
+});
+</script>
+{% endblock %}

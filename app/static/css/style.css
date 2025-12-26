@@ -1,0 +1,873 @@
+/* Custom styles for Daily Report System */
+
+:root {
+    --primary-color: #667eea;
+    --secondary-color: #764ba2;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f6fa;
+}
+
+/* Navigation */
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.navbar-nav .nav-link {
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    transform: translateY(-1px);
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    font-weight: 600;
+}
+
+/* Buttons */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    border: none;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    border-radius: 8px;
+    border: 1px solid #e1e5e9;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Tables */
+.table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: var(--light-color);
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Badges */
+.badge {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 8px;
+    border: none;
+}
+
+/* Dashboard Cards */
+.card.bg-primary, .card.bg-success, .card.bg-info, .card.bg-warning {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+}
+
+.card.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+}
+
+.card.bg-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #6f42c1 100%) !important;
+}
+
+.card.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%) !important;
+}
+
+/* Enhanced Branch Dropdown Suggestions - Rendered in top layer */
+#branch_suggestions {
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    background: white;
+    z-index: 99999 !important;
+    padding: 4px 0;
+    max-height: 300px !important;
+    overflow-y: auto;
+    position: fixed !important;
+    max-width: 400px;
+    min-width: 250px;
+    margin-top: 2px;
+    display: none;
+    pointer-events: auto;
+}
+
+/* Ensure dropdown doesn't affect layout when hidden */
+#branch_suggestions:not(.show) {
+    pointer-events: none;
+    visibility: hidden;
+}
+
+#branch_suggestions .dropdown-item {
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    transition: background-color 0.15s ease;
+    cursor: pointer;
+    border-radius: 0;
+    margin: 0 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#branch_suggestions .dropdown-item:hover,
+#branch_suggestions .dropdown-item.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#branch_suggestions .dropdown-item .fw-bold {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 1px;
+    display: block;
+}
+
+#branch_suggestions .dropdown-item small {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    display: block;
+}
+
+#branch_suggestions .dropdown-item:hover small {
+    opacity: 0.9;
+}
+
+#branch_suggestions .dropdown-item-text {
+    padding: 12px;
+    text-align: center;
+    font-style: italic;
+    color: #6c757d;
+    background: #f8f9fa;
+    margin: 0 4px;
+    border-radius: 4px;
+}
+
+/* Branch search input and container styling */
+#branch_search {
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure parent container has proper positioning context */
+.position-relative {
+    position: relative !important;
+    z-index: auto;
+}
+
+/* Prevent dropdown from being clipped by parent containers */
+.card-body {
+    overflow: visible !important;
+}
+
+.card {
+    overflow: visible !important;
+}
+
+/* Ensure dropdown container doesn't create stacking context issues */
+#branch_search + input + #branch_suggestions {
+    position: absolute !important;
+    z-index: 10000 !important;
+}
+
+#branch_search:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+#branch_search.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+/* Selected branch info styling */
+#selected_branch_info {
+    margin-top: 6px;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
+    border-radius: 8px;
+    border: 1px solid #c3e6cb;
+}
+
+#selected_branch_info small {
+    color: #155724;
+    font-weight: 500;
+}
+
+/* Dropdown scrollbar styling */
+#branch_suggestions::-webkit-scrollbar {
+    width: 4px;
+}
+
+#branch_suggestions::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 2px;
+}
+
+#branch_suggestions::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 2px;
+}
+
+#branch_suggestions::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* Animation for dropdown appearance */
+#branch_suggestions.show {
+    animation: dropdownFadeIn 0.15s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Force dropdown to be on top of all components */
+#branch_suggestions {
+    z-index: 99999 !important;
+    position: fixed !important;
+}
+
+#branch_suggestions.show {
+    z-index: 99999 !important;
+    display: block !important;
+}
+
+/* Responsive dropdown adjustments */
+@media (max-width: 768px) {
+    #branch_suggestions {
+        max-height: 250px !important;
+        max-width: 100% !important;
+        min-width: 200px;
+    }
+    
+    #branch_suggestions .dropdown-item {
+        padding: 8px 10px;
+        margin: 0 2px;
+    }
+    
+    #branch_suggestions .dropdown-item .fw-bold {
+        font-size: 0.85rem;
+    }
+    
+    #branch_suggestions .dropdown-item small {
+        font-size: 0.7rem;
+    }
+}
+
+/* Loading state for branch search */
+#branch_search.loading {
+    background-image: url("data:image/svg+xml,%3csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3e%3cg fill='none' fill-rule='evenodd'%3e%3cg fill='%23667eea' fill-opacity='0.8'%3e%3cpath d='M10 3v3l4-4-4-4v3c-4.42 0-8 3.58-8 8s3.58 8 8 8c1.57 0 3.04-.46 4.28-1.25l1.45 1.45C14.1 18.53 12.15 19 10 19c-4.97 0-9-4.03-9-9s4.03-9 9-9z' opacity='.9'%3e%3canimateTransform attributeName='transform' type='rotate' from='0 10 10' to='360 10 10' dur='1s' repeatCount='indefinite'/%3e%3c/path%3e%3c/g%3e%3c/g%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 0.25rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .navbar-nav {
+        text-align: center;
+    }
+    
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .d-flex.justify-content-between > * {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .col-md-3, .col-md-4, .col-md-6 {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-lg {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* Loading Spinner */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Sticky Elements */
+.sticky-top {
+    top: 1rem;
+}
+
+/* Form Sections */
+.card-header.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%) !important;
+    color: #212529 !important;
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-color);
+}
+
+/* Print Styles */
+@media print {
+    .navbar, .btn, .card-header {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+}
+/* Dynam
+ic Form Styles */
+.new-store-row {
+    background-color: rgba(13, 202, 240, 0.1);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px dashed #0dcaf0;
+}
+
+.new-store-row:hover {
+    background-color: rgba(13, 202, 240, 0.15);
+}
+
+.form-check {
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.form-check:hover {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.form-check-input:checked + .form-check-label {
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+/* Area and Store Management */
+.areas-container, .stores-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.badge.bg-success {
+    font-size: 0.7em;
+    vertical-align: top;
+}
+
+/* Button Animations */
+.btn-outline-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(25, 135, 84, 0.3);
+}
+
+.btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Form Section Headers */
+.card-header.bg-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+}
+
+.card-header.bg-success {
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%) !important;
+}
+
+.card-header.bg-info {
+    background: linear-gradient(135deg, #0dcaf0 0%, #6f42c1 100%) !important;
+}
+
+/* Responsive Improvements for Dynamic Forms */
+@media (max-width: 768px) {
+    .new-store-row .col-md-4,
+    .new-store-row .col-md-3,
+    .new-store-row .col-md-1 {
+        margin-bottom: 10px;
+    }
+    
+    .new-store-row .btn-danger {
+        width: 100%;
+    }
+    
+    .areas-container, .stores-container {
+        max-height: 200px;
+    }
+    
+    .card-header .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+}
+
+/* Loading States */
+.btn.loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.btn.loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Enhanced Form Validation */
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.form-control.is-valid,
+.form-select.is-valid {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+}
+
+/* Improved Scrollbars for Form Containers */
+.areas-container::-webkit-scrollbar,
+.stores-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.areas-container::-webkit-scrollbar-track,
+.stores-container::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+}
+
+.areas-container::-webkit-scrollbar-thumb,
+.stores-container::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
+}
+
+.areas-container::-webkit-scrollbar-thumb:hover,
+.stores-container::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* Enhanced Dynamic Form Styles */
+.form-check.new-area {
+    background: linear-gradient(135deg, rgba(25, 135, 84, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%);
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    border-radius: 6px;
+    margin: 2px 0;
+}
+
+.new-store-row {
+    background: linear-gradient(135deg, rgba(13, 202, 240, 0.08) 0%, rgba(111, 66, 193, 0.08) 100%);
+    border: 1px dashed rgba(13, 202, 240, 0.3);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.new-store-row:hover {
+    background: linear-gradient(135deg, rgba(13, 202, 240, 0.12) 0%, rgba(111, 66, 193, 0.12) 100%);
+    border-color: rgba(13, 202, 240, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 202, 240, 0.15);
+}
+
+/* Area highlighting in dropdowns */
+.form-select option[style*="bold"] {
+    background-color: #f8f9fa !important;
+    font-weight: bold !important;
+}
+
+/* Success animations */
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOutToTop {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+.area-added {
+    animation: slideInFromTop 0.4s ease-out;
+}
+
+.area-removed {
+    animation: slideOutToTop 0.3s ease-in;
+}
+
+/* Enhanced badge styles */
+.badge.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    font-size: 0.65em;
+    padding: 0.25em 0.5em;
+    border-radius: 0.375rem;
+}
+
+/* Improved form section spacing */
+.card-body .row:last-child {
+    margin-bottom: 0;
+}
+
+/* Enhanced button group styling */
+.btn-group-sm .btn {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+}
+
+.btn-group-sm .btn:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.btn-group-sm .btn:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* Loading state improvements */
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn.loading .fas {
+    display: none;
+}
+
+/* Enhanced form validation styles */
+.is-invalid {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Improved tooltip positioning */
+.invalid-tooltip {
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    z-index: 1000 !important;
+    max-width: 200px;
+    word-wrap: break-word;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+/* Enhanced responsive design for dynamic forms */
+@media (max-width: 768px) {
+    .new-store-row {
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .new-store-row .col-md-4,
+    .new-store-row .col-md-3,
+    .new-store-row .col-md-1 {
+        margin-bottom: 8px;
+    }
+    
+    .new-store-row .btn-danger {
+        width: 100%;
+        margin-top: 5px;
+    }
+    
+    .btn-group-sm {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group-sm .btn {
+        border-radius: 0.375rem !important;
+        margin-bottom: 2px;
+    }
+}
+
+/* Enhanced scrollbar for areas and stores containers */
+.areas-container,
+.stores-container {
+    scrollbar-width: thin;
+    scrollbar-color: #dee2e6 #f8f9fa;
+}
+
+/* Focus states for better accessibility */
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    outline: none;
+}
+
+.form-check-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Improved visual hierarchy */
+.card-header h6 {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+/* Enhanced hover effects */
+.form-check:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 4px;
+}
+
+.btn-outline-success:hover,
+.btn-outline-info:hover,
+.btn-outline-secondary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Enhanced button interaction feedback */
+.btn-outline-primary:hover,
+.btn-outline-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-outline-primary:active,
+.btn-outline-danger:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Button click animation */
+.btn:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+}
+
+/* Ensure buttons are clickable */
+.btn-group-sm .btn {
+    min-width: 32px;
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.btn-group-sm .btn:hover {
+    z-index: 1;
+}
+
+/* Loading state for AJAX operations */
+.btn.processing {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn.processing::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    top: 50%;
+    left: 50%;
+    margin-left: -7px;
+    margin-top: -7px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+/* Success message styling */
+.alert-success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    border-color: #f5c6cb;
+    color: #721c24;
+}

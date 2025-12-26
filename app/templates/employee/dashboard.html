@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}SPVR Dashboard - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-home me-2"></i>Welcome, {{ user.employee_name }}
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ user.reports|length }}</h4>
+                        <p class="mb-0">Total Reports</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ user.owned_regions|length }}</h4>
+                        <p class="mb-0">Assigned Regions</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-map-marker-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ user.owned_branches|length }}</h4>
+                        <p class="mb-0">Assigned Shops</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-building fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="d-grid">
+                            <a href="{{ url_for('employee.create_report') }}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-plus me-2"></i>Create New Report
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-grid">
+                            <a href="{{ url_for('employee.view_reports') }}" class="btn btn-outline-primary btn-lg">
+                                <i class="fas fa-eye me-2"></i>View Reports
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Your Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <p><strong>SPVR Code:</strong> {{ user.employee_code }}</p>
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Member Since:</strong> {{ user.created_at.strftime('%Y-%m-%d') }}</p>
+                
+                <hr>
+                
+                <h6>Assigned Regions:</h6>
+                {% if user.owned_regions %}
+                    {% for region in user.owned_regions %}
+                        <span class="badge bg-primary me-1 mb-1">{{ region.name }}</span>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted small">No regions assigned</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if recent_reports %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Reports
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Shop</th>
+                                <th>Region</th>
+                                <th>Report Date</th>
+                                <th>Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in recent_reports %}
+                            <tr>
+                                <td>{{ report.store.name }}</td>
+                                <td>{{ report.area.name }}</td>
+                                <td>{{ report.report_date.strftime('%Y-%m-%d') if report.report_date else 'N/A' }}</td>
+                                <td>{{ report.created_at.strftime('%Y-%m-%d %H:%M') if report.created_at else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if user.reports|length > 5 %}
+                <div class="text-center">
+                    <a href="{{ url_for('employee.view_reports') }}" class="btn btn-outline-primary">
+                        View All Reports ({{ user.reports|length }})
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}View Reports - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-eye me-2"></i>View Reports
+            </h1>
+            <a href="{{ url_for('employee.create_report') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>New Report
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>Filters
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="filterForm">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="start_date" class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="end_date" class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="branch_id" class="form-label">Shop</label>
+                            <select class="form-select" id="branch_id" name="branch_id">
+                                <option value="">All Shops</option>
+                                {% for branch in branches %}
+                                <option value="{{ branch.id }}">{{ branch.name }} ({{ branch.code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-primary" onclick="loadReports()">
+                                    <i class="fas fa-search me-2"></i>Apply Filters
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="clearFilters()">
+                                    <i class="fas fa-times me-2"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reports Table Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>Reports
+                </h5>
+                <span id="reportCount" class="badge bg-primary">0 reports</span>
+            </div>
+            <div class="card-body">
+                <!-- Loading Spinner -->
+                <div id="loadingSpinner" class="text-center py-5" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading reports...</p>
+                </div>
+                
+                <!-- Reports Table -->
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="reportsTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Date</th>
+                                <th>Branch</th>
+                                <th>SPVR Name</th>
+                                <th>Shop Name</th>
+                                <th>Shop Code</th>
+                                <th>Region</th>
+                                <th>Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody">
+                            <!-- Reports will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- No Reports Message -->
+                <div id="noReports" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No reports found</h5>
+                    <p class="text-muted">Try adjusting your filters or create a new report.</p>
+                    <a href="{{ url_for('employee.create_report') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create New Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadReports();
+    
+    // Auto-search on input change with debounce
+    const inputs = document.querySelectorAll('#filterForm input, #filterForm select');
+    inputs.forEach(input => {
+        let timeout;
+        input.addEventListener('change', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(loadReports, 300);
+        });
+    });
+});
+
+function loadReports() {
+    const formData = new FormData(document.getElementById('filterForm'));
+    const params = new URLSearchParams(formData);
+    
+    document.getElementById('loadingSpinner').style.display = 'block';
+    document.getElementById('reportsTable').style.display = 'none';
+    document.getElementById('noReports').style.display = 'none';
+    
+    fetch(`{{ url_for('employee.api_view_reports') }}?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            
+            const tbody = document.getElementById('reportsTableBody');
+            tbody.innerHTML = '';
+            
+            if (data.length > 0) {
+                data.forEach(report => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td><strong>${report.report_date}</strong></td>
+                        <td>${report.branch_name || 'N/A'}</td>
+                        <td>${report.spvr_name}</td>
+                        <td>${report.store_name}</td>
+                        <td><code>${report.store_code}</code></td>
+                        <td><span class="badge bg-info">${report.area}</span></td>
+                        <td><small class="text-muted">${report.report_time}</small></td>
+                        <td>
+                            <a href="/employee/view_report/${report.id}" 
+                               class="btn btn-sm btn-outline-primary" title="View Report">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    `;
+                });
+                
+                document.getElementById('reportsTable').style.display = 'table';
+                document.getElementById('reportCount').textContent = `${data.length} report${data.length !== 1 ? 's' : ''}`;
+            } else {
+                document.getElementById('noReports').style.display = 'block';
+                document.getElementById('reportCount').textContent = '0 reports';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading reports:', error);
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('noReports').style.display = 'block';
+            document.getElementById('reportCount').textContent = '0 reports';
+        });
+}
+
+function clearFilters() {
+    document.getElementById('filterForm').reset();
+    loadReports();
+}
+</script>
+{% endblock %}

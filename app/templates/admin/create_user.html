@@ -1,0 +1,515 @@
+{% extends "base.html" %}
+
+{% block title %}Create User - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-user-plus me-2"></i>Create New User
+            </h1>
+            <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Users
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" id="createUserForm">
+                    <!-- Basic Information -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-user me-2"></i>Basic Information
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="employee_name" class="form-label">SPVR Name *</label>
+                                    <input type="text" class="form-control" id="employee_name" name="employee_name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="employee_code" class="form-label">SPVR Code *</label>
+                                    <input type="text" class="form-control" id="employee_code" name="employee_code" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="username" class="form-label">Username *</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="password" class="form-label">Password *</label>
+                                    <input type="password" class="form-control" id="password" name="password" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Areas Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-map-marker-alt me-2"></i>Assigned Areas
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label mb-0">Select Areas</label>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-success" onclick="selectAllAreas()">
+                                                Select All
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="deselectAllAreas()">
+                                                Clear All
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="border rounded p-3 areas-container">
+                                        {% for area in areas %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="assigned_areas" 
+                                                   value="{{ area.id }}" id="area_{{ area.id }}">
+                                            <label class="form-check-label" for="area_{{ area.id }}">
+                                                {{ area.name }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="form-text">Select all areas this SPVR will work in</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Add New Area -->
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label for="new_area_name" class="form-label">Add New Area</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="new_area_name" 
+                                               placeholder="Enter new area name" maxlength="50"
+                                               onkeypress="if(event.key==='Enter'){event.preventDefault();addNewArea();}">
+                                        <button type="button" class="btn btn-outline-success" onclick="addNewArea()" title="Add Area (Ctrl+Enter)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-text">Press Enter or click the + button to add the area</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stores Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="fas fa-store me-2"></i>Assigned Stores
+                            </h6>
+                            <button type="button" class="btn btn-light btn-sm" onclick="addNewStore()">
+                                <i class="fas fa-plus me-2"></i>Add New Shop
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <!-- Existing Stores Selection -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label mb-0">Select Existing Stores</label>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-info" onclick="selectAllStores()">
+                                            Select All
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="deselectAllStores()">
+                                            Clear All
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="border rounded p-3 stores-container">
+                                    {% for store in stores %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="assigned_stores" 
+                                               value="{{ store.id }}" id="store_{{ store.id }}">
+                                        <label class="form-check-label" for="store_{{ store.id }}">
+                                            <strong>{{ store.name }}</strong> - {{ store.code }}
+                                            <small class="text-muted">({{ store.area.name }})</small>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Dynamic New Stores -->
+                            <div class="mb-3">
+                                <label class="form-label">Add New Stores</label>
+                                <div id="newStoresContainer">
+                                    <!-- Dynamic store rows will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Create User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card sticky-top">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Instructions
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Fill in all required fields marked with *
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        SPVR code must be unique
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Username must be unique
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Select existing areas or add new ones
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Select existing stores or add new ones
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Use "Add New Shop" to create store entries
+                    </li>
+                    <li>
+                        <i class="fas fa-check text-success me-2"></i>
+                        SPVR will only see assigned areas and stores
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// @ts-nocheck
+/* eslint-disable */
+let storeCounter = 0;
+let availableAreas = [];
+
+// Initialize available areas on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load existing areas from server
+    // eslint-disable-next-line
+    {% for area in areas %}
+    availableAreas.push({
+        id: '{{ area.id }}',
+        name: '{{ area.name }}',
+        isNew: false
+    });
+    {% endfor %}
+});
+
+function buildAreaOptions() {
+    let optionsHtml = '<option value="">Select Area</option>';
+    availableAreas.forEach(area => {
+        const badge = area.isNew ? ' <span class="badge bg-success">New</span>' : '';
+        optionsHtml += `<option value="${area.id}">${area.name}${badge}</option>`;
+    });
+    return optionsHtml;
+}
+
+function addNewStore() {
+    storeCounter++;
+    const container = document.getElementById('newStoresContainer');
+    
+    const storeRow = document.createElement('div');
+    storeRow.className = 'row mb-3 new-store-row';
+    storeRow.id = `store-row-${storeCounter}`;
+    
+    storeRow.innerHTML = `
+        <div class="col-md-4">
+            <input type="text" class="form-control" name="new_store_names[]" 
+                   placeholder="Store Name" required>
+        </div>
+        <div class="col-md-4">
+            <input type="text" class="form-control" name="new_store_codes[]" 
+                   placeholder="Store Code" required>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" name="new_store_areas[]" required>
+                ${buildAreaOptions()}
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeStore(${storeCounter})" title="Remove Store">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    container.appendChild(storeRow);
+    
+    // Add animation
+    storeRow.style.opacity = '0';
+    storeRow.style.transform = 'translateY(-10px)';
+    setTimeout(() => {
+        storeRow.style.transition = 'all 0.3s ease';
+        storeRow.style.opacity = '1';
+        storeRow.style.transform = 'translateY(0)';
+    }, 10);
+}
+
+function removeStore(id) {
+    const row = document.getElementById(`store-row-${id}`);
+    if (row) {
+        row.style.transition = 'all 0.3s ease';
+        row.style.opacity = '0';
+        row.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+            row.remove();
+        }, 300);
+    }
+}
+
+function addNewArea() {
+    const areaInput = document.getElementById('new_area_name');
+    const areaName = areaInput.value.trim();
+    
+    // Validate area name
+    const validation = window.areaStoreManager ? 
+        window.areaStoreManager.validateAreaName(areaName) : 
+        { valid: !!areaName, message: 'Please enter an area name' };
+    
+    if (!validation.valid) {
+        showAlert(validation.message, 'warning');
+        areaInput.focus();
+        return;
+    }
+    
+    // Check if area already exists (case-insensitive)
+    const existingArea = availableAreas.find(area => 
+        area.name.toLowerCase() === areaName.toLowerCase()
+    );
+    
+    if (existingArea) {
+        showAlert('Area already exists', 'warning');
+        areaInput.focus();
+        areaInput.select();
+        return;
+    }
+    
+    // Generate unique ID for new area
+    const areaId = `new_area_${Date.now()}`;
+    
+    // Add to available areas array
+    availableAreas.push({
+        id: areaName, // Use name as ID for new areas
+        name: areaName,
+        isNew: true
+    });
+    
+    // Create new area checkbox
+    const areasContainer = document.querySelector('.areas-container');
+    const newAreaDiv = document.createElement('div');
+    newAreaDiv.className = 'form-check new-area';
+    newAreaDiv.style.opacity = '0';
+    newAreaDiv.style.transform = 'translateY(-5px)';
+    
+    newAreaDiv.innerHTML = `
+        <input class="form-check-input" type="checkbox" name="new_areas[]" 
+               value="${areaName}" id="${areaId}" checked>
+        <label class="form-check-label" for="${areaId}">
+            ${areaName} <span class="badge bg-success">New</span>
+        </label>
+    `;
+    
+    areasContainer.appendChild(newAreaDiv);
+    
+    // Animate the new area
+    setTimeout(() => {
+        newAreaDiv.style.transition = 'all 0.3s ease';
+        newAreaDiv.style.opacity = '1';
+        newAreaDiv.style.transform = 'translateY(0)';
+        newAreaDiv.classList.add('area-added');
+    }, 10);
+    
+    // Update all existing store area dropdowns
+    updateAllStoreAreaDropdowns();
+    
+    // Clear input and show success
+    areaInput.value = '';
+    areaInput.focus(); // Keep focus for easy multiple additions
+    showAlert(`Area "${areaName}" added successfully and is now available in store dropdowns`, 'success');
+}
+
+function updateAllStoreAreaDropdowns() {
+    const storeAreaSelects = document.querySelectorAll('select[name="new_store_areas[]"]');
+    storeAreaSelects.forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = buildAreaOptions();
+        
+        // Restore previous selection if it still exists
+        if (currentValue && availableAreas.find(area => area.id === currentValue)) {
+            select.value = currentValue;
+        }
+    });
+}
+
+// Enhanced area selection handling
+function selectAllAreas() {
+    const checkboxes = document.querySelectorAll('input[name="assigned_areas"], input[name="new_areas[]"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+    updateStoreAreaHighlighting();
+}
+
+function deselectAllAreas() {
+    const checkboxes = document.querySelectorAll('input[name="assigned_areas"], input[name="new_areas[]"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateStoreAreaHighlighting();
+}
+
+function selectAllStores() {
+    const checkboxes = document.querySelectorAll('input[name="assigned_stores"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+    });
+}
+
+function deselectAllStores() {
+    const checkboxes = document.querySelectorAll('input[name="assigned_stores"]');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+    });
+}
+
+function updateStoreAreaHighlighting() {
+    const selectedAreas = document.querySelectorAll('input[name="assigned_areas"]:checked, input[name="new_areas[]"]:checked');
+    const selectedAreaValues = Array.from(selectedAreas).map(area => area.value);
+    
+    const storeAreaSelects = document.querySelectorAll('select[name="new_store_areas[]"]');
+    storeAreaSelects.forEach(select => {
+        const options = select.querySelectorAll('option');
+        options.forEach(option => {
+            if (option.value && selectedAreaValues.includes(option.value)) {
+                option.style.fontWeight = 'bold';
+                option.style.color = '#198754';
+                option.style.backgroundColor = '#f8f9fa';
+            } else {
+                option.style.fontWeight = 'normal';
+                option.style.color = '';
+                option.style.backgroundColor = '';
+            }
+        });
+    });
+}
+
+// Listen for area selection changes
+document.addEventListener('change', function(e) {
+    if (e.target.name === 'assigned_areas' || e.target.name === 'new_areas[]') {
+        updateStoreAreaHighlighting();
+    }
+});
+
+// Enhanced form validation
+function validateForm() {
+    // Validate that at least one area is selected
+    const selectedAreas = document.querySelectorAll('input[name="assigned_areas"]:checked, input[name="new_areas[]"]:checked');
+    if (selectedAreas.length === 0) {
+        showAlert('Please select at least one area for the SPVR', 'error');
+        return false;
+    }
+    
+    // Validate new stores have all required fields
+    const newStoreRows = document.querySelectorAll('.new-store-row');
+    for (let row of newStoreRows) {
+        const inputs = row.querySelectorAll('input[required], select[required]');
+        for (let input of inputs) {
+            if (!input.value.trim()) {
+                showAlert('Please fill in all fields for new stores or remove empty rows', 'error');
+                input.focus();
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+// Form submission handler
+document.getElementById('createUserForm').addEventListener('submit', function(e) {
+    if (!validateForm()) {
+        e.preventDefault();
+        return;
+    }
+    
+    // Add loading state
+    if (typeof submitFormWithLoading === 'function') {
+        submitFormWithLoading('createUserForm');
+    }
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl/Cmd + Enter to add new area
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        const areaInput = document.getElementById('new_area_name');
+        if (document.activeElement === areaInput) {
+            e.preventDefault();
+            addNewArea();
+        }
+    }
+    
+    // Escape to clear area input
+    if (e.key === 'Escape') {
+        const areaInput = document.getElementById('new_area_name');
+        if (document.activeElement === areaInput) {
+            areaInput.value = '';
+        }
+    }
+});
+
+// Auto-generate store codes
+document.addEventListener('input', function(e) {
+    if (e.target.name === 'new_store_names[]') {
+        const row = e.target.closest('.new-store-row');
+        const codeInput = row.querySelector('input[name="new_store_codes[]"]');
+        
+        if (codeInput && !codeInput.value) {
+            const name = e.target.value.trim();
+            if (name.length >= 3) {
+                // Generate code from name (first 3 letters + random number)
+                const code = name.substring(0, 3).toUpperCase() + '-' + 
+                            Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                codeInput.value = code;
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

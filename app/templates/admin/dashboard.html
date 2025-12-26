@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="total-users">{{ total_users }}</h4>
+                        <p class="mb-0">Total Users</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="total-reports">{{ total_reports }}</h4>
+                        <p class="mb-0">Total Reports</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="total-branches">{{ total_branches }}</h4>
+                        <p class="mb-0">Total Branches</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-code-branch fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="total-regions">{{ total_regions }}</h4>
+                        <p class="mb-0">Total Regions</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-map-marked-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2"></i>Recent Reports
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_reports %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>SPVR</th>
+                                <th>Shop</th>
+                                <th>Region</th>
+                                <th>Date</th>
+                                <th>Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in recent_reports %}
+                            <tr>
+                                <td>{{ report.employee.employee_name if report.employee else 'N/A' }}</td>
+                                <td>{{ report.store.name if report.store else 'N/A' }}</td>
+                                <td>{{ report.area.name if report.area else 'N/A' }}</td>
+                                <td>{{ report.report_date.strftime('%Y-%m-%d') if report.report_date else 'N/A' }}</td>
+                                <td>{{ report.submitted_time_egypt.strftime('%Y-%m-%d %H:%M') if report.submitted_time_egypt else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No reports submitted yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('admin.manage_users') }}" class="btn btn-primary">
+                        <i class="fas fa-users-cog me-2"></i>Manage Users
+                    </a>
+                    <a href="{{ url_for('admin.admin_users') }}" class="btn btn-warning">
+                        <i class="fas fa-user-shield me-2"></i>Admin Users
+                    </a>
+                    <a href="{{ url_for('admin.reports') }}" class="btn btn-success">
+                        <i class="fas fa-download me-2"></i>Export Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Function to refresh dashboard statistics
+function refreshDashboardStats() {
+    fetch('/admin/api/dashboard/stats')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the numbers with animation
+                updateCountWithAnimation('total-users', data.stats.total_users);
+                updateCountWithAnimation('total-reports', data.stats.total_reports);
+                updateCountWithAnimation('total-branches', data.stats.total_branches);
+                updateCountWithAnimation('total-regions', data.stats.total_regions);
+                
+                console.log('Dashboard stats updated successfully');
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing dashboard stats:', error);
+        });
+}
+
+// Function to update count with smooth animation
+function updateCountWithAnimation(elementId, newValue) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const currentValue = parseInt(element.textContent) || 0;
+    
+    if (currentValue !== newValue) {
+        // Add a subtle animation
+        element.style.transition = 'transform 0.3s ease';
+        element.style.transform = 'scale(1.1)';
+        
+        setTimeout(() => {
+            element.textContent = newValue;
+            element.style.transform = 'scale(1)';
+        }, 150);
+    }
+}
+
+// Refresh stats when page becomes visible (user returns to tab)
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        refreshDashboardStats();
+    }
+});
+
+// Refresh stats when window gains focus
+window.addEventListener('focus', function() {
+    refreshDashboardStats();
+});
+
+// Auto-refresh every 30 seconds
+setInterval(refreshDashboardStats, 30000);
+
+// Also expose a global function to manually refresh (can be called after delete operations)
+window.refreshDashboard = refreshDashboardStats;
+</script>
+{% endblock %}

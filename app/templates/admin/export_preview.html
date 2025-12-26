@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Export Preview - Daily Report System{% endblock %}
+
+{% block styles %}
+<style>
+    /* Custom column widths to match Excel export */
+    .preview-table th:nth-child(1),
+    .preview-table td:nth-child(1) { min-width: 100px; } /* Date */
+    .preview-table th:nth-child(2),
+    .preview-table td:nth-child(2) { min-width: 100px; } /* SPVR Code */
+    .preview-table th:nth-child(3),
+    .preview-table td:nth-child(3) { min-width: 150px; } /* SPVR Name */
+    .preview-table th:nth-child(4),
+    .preview-table td:nth-child(4) { min-width: 100px; } /* Shop code */
+    .preview-table th:nth-child(5),
+    .preview-table td:nth-child(5) { min-width: 180px; } /* Shop Name */
+    .preview-table th:nth-child(6),
+    .preview-table td:nth-child(6) { min-width: 120px; } /* Region */
+    .preview-table th:nth-child(7),
+    .preview-table td:nth-child(7) { min-width: 120px; } /* Governorate */
+    .preview-table th:nth-child(8),
+    .preview-table td:nth-child(8) { min-width: 200px; } /* Samsung */
+    .preview-table th:nth-child(9),
+    .preview-table td:nth-child(9) { min-width: 200px; } /* Competitors */
+    .preview-table th:nth-child(10),
+    .preview-table td:nth-child(10) { min-width: 180px; } /* TV */
+    .preview-table th:nth-child(11),
+    .preview-table td:nth-child(11) { min-width: 180px; } /* HA */
+    .preview-table th:nth-child(12),
+    .preview-table td:nth-child(12) { min-width: 150px; } /* SFO, PMT */
+    .preview-table th:nth-child(13),
+    .preview-table td:nth-child(13) { min-width: 150px; } /* Display */
+    .preview-table th:nth-child(14),
+    .preview-table td:nth-child(14) { min-width: 150px; } /* Sales */
+    .preview-table th:nth-child(15),
+    .preview-table td:nth-child(15) { min-width: 150px; } /* Store Issue */
+    .preview-table th:nth-child(16),
+    .preview-table td:nth-child(16) { min-width: 180px; } /* Complaints */
+    .preview-table th:nth-child(17),
+    .preview-table td:nth-child(17) { min-width: 180px; } /* Issues */
+    .preview-table th:nth-child(18),
+    .preview-table td:nth-child(18) { min-width: 180px; } /* Requirements */
+    .preview-table th:nth-child(19),
+    .preview-table td:nth-child(19) { min-width: 180px; } /* Store */
+    .preview-table th:nth-child(20),
+    .preview-table td:nth-child(20) { min-width: 180px; } /* Member */
+    
+    .preview-table {
+        font-size: 0.85rem;
+    }
+    
+    .preview-table th {
+        white-space: normal;
+        word-wrap: break-word;
+        padding: 8px;
+        vertical-align: middle;
+    }
+    
+    .preview-table td {
+        white-space: normal;
+        word-wrap: break-word;
+        padding: 8px;
+        vertical-align: top;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-eye me-2"></i>Excel Export Preview
+            </h1>
+            <div>
+                <a href="{{ url_for('admin.reports') }}" class="btn btn-secondary me-2">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Reports
+                </a>
+                <a href="{{ url_for('admin.export_reports') }}" class="btn btn-success">
+                    <i class="fas fa-download me-2"></i>Download Excel
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Preview:</strong> This shows how your Excel export will be structured and formatted. 
+            The actual export will include all filtered reports with proper colors and formatting.
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>Excel Structure Preview
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0 preview-table">
+                        <!-- Row 1: Main Section Headers -->
+                        <thead>
+                            <tr>
+                                <th colspan="7" class="text-center fw-bold" style="background-color: #E2EFDA;">AM-SPVR & Store Information</th>
+                                <th colspan="2" class="text-center fw-bold" style="background-color: #D9E1F2;">Sales Movement</th>
+                                <th colspan="2" class="text-center fw-bold" style="background-color: #FCE4D6;">Samsung Product Availability</th>
+                                <th colspan="4" class="text-center fw-bold" style="background-color: #FFF2CC;">Store Activities</th>
+                                <th colspan="3" class="text-center fw-bold" style="background-color: #D9E1F2;">VOD</th>
+                                <th colspan="2" class="text-center fw-bold" style="background-color: #D9E1F2;">Result & Action</th>
+                            </tr>
+                            <!-- Row 2: Sub Headers -->
+                            <tr>
+                                <th colspan="3" class="text-center fw-bold" style="background-color: #E2EFDA;">Member Data</th>
+                                <th colspan="4" class="text-center fw-bold" style="background-color: #E2EFDA;">Shop Data</th>
+                                <th colspan="2" class="text-center fw-bold" style="background-color: #D9E1F2;">Samsung & Competitors (LG, Araby, Others)</th>
+                                <th class="text-center fw-bold" style="background-color: #FCE4D6;">Ditributor, Key Model, Flag</th>
+                                <th class="text-center fw-bold" style="background-color: #FCE4D6;">Ditributor, Key Model, Flag</th>
+                                <th colspan="4" class="text-center fw-bold" style="background-color: #FFF2CC;">Samsung & Competitors</th>
+                                <th colspan="3" class="text-center fw-bold" style="background-color: #FFFF00;">Store & Dealer's Situation</th>
+                                <th colspan="2" class="text-center fw-bold" style="background-color: #FFFF00;">What I did ?</th>
+                            </tr>
+                            <!-- Row 3: Column Headers -->
+                            <tr>
+                                <th class="text-center" style="background-color: #E2EFDA;">Date</th>
+                                <th class="text-center" style="background-color: #E2EFDA;">SPVR Code</th>
+                                <th class="text-center" style="background-color: #E2EFDA;">SPVR Name</th>
+                                <th class="text-center" style="background-color: #E2EFDA;">Shop code</th>
+                                <th class="text-center" style="background-color: #E2EFDA;">Shop Name</th>
+                                <th class="text-center" style="background-color: #E2EFDA;">Region</th>
+                                <th class="text-center" style="background-color: #E2EFDA;">Governorate</th>
+                                <th class="text-center" style="background-color: #D9E1F2;">Samsung</th>
+                                <th class="text-center" style="background-color: #D9E1F2;">Competitors</th>
+                                <th class="text-center" style="background-color: #FCE4D6;">TV</th>
+                                <th class="text-center" style="background-color: #FCE4D6;">HA</th>
+                                <th class="text-center" style="background-color: #FFF2CC;">SFO, PMT</th>
+                                <th class="text-center" style="background-color: #FFF2CC;">Display</th>
+                                <th class="text-center" style="background-color: #FFF2CC;">Sales</th>
+                                <th class="text-center" style="background-color: #FFF2CC;">Store Issue (SDA, DOA)</th>
+                                <th class="text-center" style="background-color: #FFFF00;">Complaints</th>
+                                <th class="text-center" style="background-color: #FFFF00;">Issues</th>
+                                <th class="text-center" style="background-color: #FFFF00;">Requirements</th>
+                                <th class="text-center" style="background-color: #FFFF00;">Store</th>
+                                <th class="text-center" style="background-color: #FFFF00;">Member</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if reports %}
+                                {% for report in reports %}
+                                <tr>
+                                    <td class="text-center">{{ report.report_date.strftime('%Y-%m-%d') }}</td>
+                                    <td class="text-center">{{ report.employee.employee_code }}</td>
+                                    <td>{{ report.employee.employee_name }}</td>
+                                    <td class="text-center">{{ report.store.code }}</td>
+                                    <td>{{ report.store.name }}</td>
+                                    <td>{{ report.area.name }}</td>
+                                    <td>{{ report.governorate_display or report.store.governorate or '' }}</td>
+                                    <td>{{ (report.samsung_sales or '')[:30] }}{% if report.samsung_sales and report.samsung_sales|length > 30 %}...{% endif %}</td>
+                                    <td>{{ (report.competitors_sales or '')[:30] }}{% if report.competitors_sales and report.competitors_sales|length > 30 %}...{% endif %}</td>
+                                    <td>{{ (report.tv_availability or '')[:20] }}{% if report.tv_availability and report.tv_availability|length > 20 %}...{% endif %}</td>
+                                    <td>{{ (report.ha_availability or '')[:20] }}{% if report.ha_availability and report.ha_availability|length > 20 %}...{% endif %}</td>
+                                    <td>{{ (report.sfo_pmt or '')[:20] }}{% if report.sfo_pmt and report.sfo_pmt|length > 20 %}...{% endif %}</td>
+                                    <td>{{ (report.display_activities or '')[:20] }}{% if report.display_activities and report.display_activities|length > 20 %}...{% endif %}</td>
+                                    <td>{{ (report.sales_activities or '')[:20] }}{% if report.sales_activities and report.sales_activities|length > 20 %}...{% endif %}</td>
+                                    <td>{{ (report.store_issues or '')[:20] }}{% if report.store_issues and report.store_issues|length > 20 %}...{% endif %}</td>
+                                    <td>{{ (report.complaints or '')[:20] }}{% if report.complaints and report.complaints|length > 20 %}...{% endif %}</td>
+                                    <td>{{ (report.issues or '')[:20] }}{% if report.issues and report.issues|length > 20 %}...{% endif %}</td>
+                                    <td>{{ (report.requirements or '')[:20] }}{% if report.requirements and report.requirements|length > 20 %}...{% endif %}</td>
+                                    <td>{{ (report.actions_taken or '')[:30] }}{% if report.actions_taken and report.actions_taken|length > 30 %}...{% endif %}</td>
+                                    <td>{{ (report.store_member_notes or '')[:30] }}{% if report.store_member_notes and report.store_member_notes|length > 30 %}...{% endif %}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="20" class="text-center text-muted py-4">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        No reports available for preview. Create some reports first.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-palette me-2"></i>Excel Formatting Features
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>Colored Section Headers:</strong> Different colors for each section
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>Merged Cells:</strong> Section headers span multiple columns
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>Bold Headers:</strong> All headers are bold and centered
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>Auto-sized Columns:</strong> Columns adjust to content width
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>Text Wrapping:</strong> Long text wraps within cells
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>Three-Level Headers:</strong> Main sections, sub-sections, and column names
+                    </li>
+                    <li>
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>Exact Color Scheme:</strong> Matches the official Excel template colors
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-cog me-2"></i>Export Options
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-filter me-2 text-primary"></i>
+                        <strong>Filtered Data:</strong> Only exports reports matching your filters
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-sort me-2 text-primary"></i>
+                        <strong>Sorted by Date:</strong> Most recent reports first
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-print me-2 text-primary"></i>
+                        <strong>Print Ready:</strong> Landscape orientation, proper margins
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-lock me-2 text-primary"></i>
+                        <strong>Frozen Headers:</strong> Headers stay visible when scrolling
+                    </li>
+                    <li>
+                        <i class="fas fa-file-excel me-2 text-primary"></i>
+                        <strong>Excel Format:</strong> Native .xlsx format with full formatting
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <a href="{{ url_for('admin.export_reports') }}" class="btn btn-success btn-lg">
+            <i class="fas fa-download me-2"></i>Download Formatted Excel Report
+        </a>
+    </div>
+</div>
+{% endblock %}

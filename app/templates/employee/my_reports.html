@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}My Reports - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-list me-2"></i>My Reports
+            </h1>
+            <a href="{{ url_for('employee.create_report') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>New Report
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-alt me-2"></i>All Reports
+                </h5>
+                <span class="badge bg-primary">{{ reports|length }} reports</span>
+            </div>
+            <div class="card-body">
+                {% if reports %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Shop Name</th>
+                                <th>Shop Code</th>
+                                <th>Region</th>
+                                <th>Report Date</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td>{{ report.store.name }}</td>
+                                <td>{{ report.store.code }}</td>
+                                <td>{{ report.area.name }}</td>
+                                <td>{{ report.report_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <span class="badge bg-success">Submitted</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No reports yet</h5>
+                    <p class="text-muted">Create your first report to get started.</p>
+                    <a href="{{ url_for('employee.create_report') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create First Report
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if reports %}
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>Reports by Area
+                </h6>
+            </div>
+            <div class="card-body">
+                {% set area_counts = {} %}
+                {% for report in reports %}
+                    {% set _ = area_counts.update({report.area.name: area_counts.get(report.area.name, 0) + 1}) %}
+                {% endfor %}
+                
+                {% for area, count in area_counts.items() %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>{{ area }}</span>
+                    <span class="badge bg-primary">{{ count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-calendar me-2"></i>Recent Activity
+                </h6>
+            </div>
+            <div class="card-body">
+                {% for report in reports[:5] %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ report.store.name }}</strong><br>
+                        <small class="text-muted">{{ report.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <span class="badge bg-success">Submitted</span>
+                </div>
+                {% if not loop.last %}<hr class="my-2">{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

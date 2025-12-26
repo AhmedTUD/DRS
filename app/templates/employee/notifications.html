@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}الإشعارات{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📬 الإشعارات</h2>
+        <button id="markAllReadBtn" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-check-double"></i> تعليم الكل كمقروء
+        </button>
+    </div>
+
+    <!-- Notifications List -->
+    <div id="notificationsList" class="list-group">
+        <!-- Will be populated by JavaScript -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="text-center py-5" style="display: none;">
+        <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+        <p class="text-muted">لا توجد إشعارات</p>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">جاري التحميل...</span>
+        </div>
+    </div>
+</div>
+
+<style>
+.notification-item {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.notification-item.unread {
+    background-color: #f8f9fa;
+    border-left-color: #0d6efd;
+}
+
+.notification-item:hover {
+    background-color: #e9ecef;
+    transform: translateX(-5px);
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.notification-icon.new_comment {
+    background-color: #cfe2ff;
+    color: #0d6efd;
+}
+
+.notification-icon.status_change {
+    background-color: #d1e7dd;
+    color: #198754;
+}
+
+.notification-icon.new_report {
+    background-color: #fff3cd;
+    color: #ffc107;
+}
+
+.notification-time {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.notification-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadNotifications();
+
+    // Mark all as read
+    document.getElementById('markAllReadBtn').addEventListener('click', function() {
+        fetch('/employee/api/notifications/mark-all-read', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadNotifications();
+                updateNotificationBadge();
+            }
+        });
+    });
+});
+
+function loadNotifications() {
+    const listContainer = document.getElementById('notificationsList');
+    const emptyState = document.getElementById('emptyState');
+    const loadingState = document.getElementById('loadingState');
+
+    loadingState.style.display = 'block';
+    listContainer.innerHTML = '';
+    emptyState.style.display = 'none';
+
+    fetch('/employee/api/notifications')
+        .then(response => response.json())
+        .then(data => {
+            loadingState.style.display = 'none';
+
+            if (data.success && data.notifications.length > 0) {
+                data.notifications.forEach(notif => {
+                    const notifElement = createNotificationElement(notif);
+                    listContainer.appendChild(notifElement);
+                });
+            } else {
+                emptyState.style.display = 'block';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+            loadingState.style.display = 'none';
+            emptyState.style.display = 'block';
+        });
+}
+
+function createNotificationElement(notif) {
+    const div = document.createElement('div');
+    div.className = `list-group-item notification-item ${notif.is_read ? '' : 'unread'}`;
+    
+    const iconClass = notif.type === 'new_comment' ? 'fa-comment' : 
+                     notif.type === 'status_change' ? 'fa-sync' : 'fa-bell';
+    
+    div.innerHTML = `
+        <div class="d-flex align-items-start">
+            <div class="notification-icon ${notif.type} me-3">
+                <i class="fas ${iconClass}"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-start mb-1">
+                    <h6 class="mb-0">${notif.title}</h6>
+                    ${!notif.is_read ? '<span class="badge bg-primary notification-badge">جديد</span>' : ''}
+                </div>
+                <p class="mb-1">${notif.message}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="notification-time">
+                        <i class="far fa-clock"></i> ${notif.created_at}
+                    </small>
+                    ${notif.related_report_id ? `
+                        <a href="/employee/view_report/${notif.related_report_id}" class="btn btn-sm btn-outline-primary">
+                            عرض التقرير
+                        </a>
+                    ` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Mark as read when clicked
+    if (!notif.is_read) {
+        div.addEventListener('click', function() {
+            markNotificationAsRead(notif.id);
+        });
+    }
+
+    return div;
+}
+
+function markNotificationAsRead(notificationId) {
+    fetch(`/employee/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadNotifications();
+            updateNotificationBadge();
+        }
+    });
+}
+
+function updateNotificationBadge() {
+    fetch('/employee/api/notifications/unread-count')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const badge = document.querySelector('.notification-badge-nav');
+                if (badge) {
+                    if (data.unread_count > 0) {
+                        badge.textContent = data.unread_count;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+        });
+}
+</script>
+{% endblock %}

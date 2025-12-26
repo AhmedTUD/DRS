@@ -1,0 +1,940 @@
+{% extends "base.html" %}
+
+{% block title %}Edit SPVR - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row" data-user-id="{{ user.id }}"></div>
+<div class="col-12">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-user-edit me-2"></i>Edit SPVR: {{ user.employee_name }}
+        </h1>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Users
+        </a>
+    </div>
+</div>
+</div>
+
+<!-- Alert container for AJAX messages -->
+<div id="alertContainer" class="mb-3" style="display: none;">
+    <div class="alert alert-dismissible fade show" role="alert">
+        <span id="alertMessage"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" id="editUserForm">
+                    <!-- Basic Information -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-user me-2"></i>Basic Information
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="employee_name" class="form-label">SPVR Name *</label>
+                                    <input type="text" class="form-control" id="employee_name" name="employee_name"
+                                        value="{{ user.employee_name }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="employee_code" class="form-label">SPVR Code *</label>
+                                    <input type="text" class="form-control" id="employee_code" name="employee_code"
+                                        value="{{ user.employee_code }}" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="username" class="form-label">Username *</label>
+                                    <input type="text" class="form-control" id="username" name="username"
+                                        value="{{ user.username }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" name="password">
+                                    <div class="form-text">Leave blank to keep current password</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Areas Section with Advanced Editing -->
+                    <div class="card mb-4">
+                        <div
+                            class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="fas fa-map-marker-alt me-2"></i>Assigned Areas
+                            </h6>
+                            <button type="button" class="btn btn-light btn-sm" onclick="showAddAreaModal()">
+                                <i class="fas fa-plus me-2"></i>Add Area
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="areasContainer">
+                                <!-- Areas will be loaded here via AJAX -->
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-success" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <div class="mt-2 text-muted">Loading areas...</div>
+                                </div>
+                            </div>
+
+                            <!-- Legacy form fields for traditional form submission -->
+                            <div id="legacyAreasContainer" style="display: none;">
+                                {% for area in areas %}
+                                <input type="checkbox" name="assigned_areas" value="{{ area.id }}" {% if area in
+                                    user.assigned_areas %}checked{% endif %} class="legacy-area-checkbox">
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stores Section with Advanced Editing -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="fas fa-store me-2"></i>Assigned Stores
+                            </h6>
+                            <button type="button" class="btn btn-light btn-sm" onclick="showAddStoreModal()">
+                                <i class="fas fa-plus me-2"></i>Add Store
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="storesContainer">
+                                <!-- Stores will be loaded here via AJAX -->
+                                <div class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-info" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <div class="mt-2 text-muted">Loading stores...</div>
+                                </div>
+                            </div>
+
+                            <!-- Legacy form fields for traditional form submission -->
+                            <div id="legacyStoresContainer" style="display: none;">
+                                {% for store in stores %}
+                                <input type="checkbox" name="assigned_stores" value="{{ store.id }}" {% if store in
+                                    user.assigned_stores %}checked{% endif %} class="legacy-store-checkbox">
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Update User
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card sticky-top">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>User Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Created:</strong> {{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>Total Reports:</strong> {{ user.reports|length }}</p>
+                <p><strong>Current Areas:</strong> {{ user.assigned_areas|length }}</p>
+                <p><strong>Current Stores:</strong> {{ user.assigned_stores|length }}</p>
+
+                <hr>
+
+                <h6>Current Areas:</h6>
+                {% if user.assigned_areas %}
+                {% for area in user.assigned_areas %}
+                <span class="badge bg-success me-1 mb-1">{{ area.name }}</span>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted small">No areas assigned</p>
+                {% endif %}
+
+                <h6 class="mt-3">Current Stores:</h6>
+                {% if user.assigned_stores %}
+                <div style="max-height: 150px; overflow-y: auto;">
+                    {% for store in user.assigned_stores %}
+                    <div class="small mb-1">
+                        <strong>{{ store.name }}</strong> - {{ store.code }}
+                        <br><small class="text-muted">{{ store.area.name }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small">No stores assigned</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Area Modal -->
+<div class="modal fade" id="addAreaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Area</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAreaForm">
+                    <div class="mb-3">
+                        <label for="areaName" class="form-label">Area Name *</label>
+                        <input type="text" class="form-control" id="areaName" required maxlength="100">
+                        <div class="form-text">Enter a unique area name</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="addArea()">
+                    <i class="fas fa-plus me-2"></i>Add Area
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Store Modal -->
+<div class="modal fade" id="addStoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Store</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addStoreForm">
+                    <div class="mb-3">
+                        <label for="storeName" class="form-label">Store Name *</label>
+                        <input type="text" class="form-control" id="storeName" required maxlength="100">
+                    </div>
+                    <div class="mb-3">
+                        <label for="storeCode" class="form-label">Store Code *</label>
+                        <input type="text" class="form-control" id="storeCode" required maxlength="50">
+                        <div class="form-text">Must be unique across all stores</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="storeArea" class="form-label">Area *</label>
+                        <select class="form-select" id="storeArea" required>
+                            <option value="">Select Area</option>
+                        </select>
+                        <div class="form-text">Store must be assigned to one of the SPVR's areas</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" onclick="addStore()">
+                    <i class="fas fa-plus me-2"></i>Add Store
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Area Modal -->
+<div class="modal fade" id="editAreaModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Area</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAreaForm">
+                    <input type="hidden" id="editAreaId">
+                    <div class="mb-3">
+                        <label for="editAreaName" class="form-label">Area Name *</label>
+                        <input type="text" class="form-control" id="editAreaName" required maxlength="100">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateArea()">
+                    <i class="fas fa-save me-2"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Store Modal -->
+<div class="modal fade" id="editStoreModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Store</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editStoreForm">
+                    <input type="hidden" id="editStoreId">
+                    <div class="mb-3">
+                        <label for="editStoreName" class="form-label">Store Name *</label>
+                        <input type="text" class="form-control" id="editStoreName" required maxlength="100">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editStoreCode" class="form-label">Store Code *</label>
+                        <input type="text" class="form-control" id="editStoreCode" required maxlength="50">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateStore()">
+                    <i class="fas fa-save me-2"></i>Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const userId = parseInt(document.querySelector('[data-user-id]').dataset.userId);
+    let userAreas = [];
+    let userStores = [];
+
+    // Utility function to escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('Edit user page loaded, userId:', userId); // Debug log
+        loadUserAreas();
+        loadUserStores();
+    });
+
+    // Utility function to show alerts
+    function showAlert(message, type = 'info') {
+        const alertContainer = document.getElementById('alertContainer');
+        const alertElement = alertContainer.querySelector('.alert');
+        const alertMessage = document.getElementById('alertMessage');
+
+        // Set alert type
+        alertElement.className = `alert alert-${type} alert-dismissible fade show`;
+        alertMessage.textContent = message;
+
+        // Show alert
+        alertContainer.style.display = 'block';
+
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            const bsAlert = new bootstrap.Alert(alertElement);
+            bsAlert.close();
+        }, 5000);
+    }
+
+    // Load user areas via AJAX
+    async function loadUserAreas() {
+        try {
+            const response = await fetch(`/admin/api/users/${userId}/areas`);
+            const areas = await response.json();
+            userAreas = areas;
+            renderAreas();
+        } catch (error) {
+            console.error('Error loading areas:', error);
+            showAlert('Error loading areas', 'danger');
+        }
+    }
+
+    // Load user stores via AJAX
+    async function loadUserStores() {
+        try {
+            const response = await fetch(`/admin/api/users/${userId}/stores`);
+            const stores = await response.json();
+            userStores = stores;
+            renderStores();
+        } catch (error) {
+            console.error('Error loading stores:', error);
+            showAlert('Error loading stores', 'danger');
+        }
+    }
+
+    // Render areas in the UI
+    function renderAreas() {
+        const container = document.getElementById('areasContainer');
+
+        if (userAreas.length === 0) {
+            container.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                <p>No areas assigned to this SPVR</p>
+                <button type="button" class="btn btn-success btn-sm" onclick="showAddAreaModal()">
+                    <i class="fas fa-plus me-2"></i>Add First Area
+                </button>
+            </div>
+        `;
+            return;
+        }
+
+        let html = '<div class="row">';
+        userAreas.forEach(area => {
+            html += `
+            <div class="col-md-6 mb-3" id="area-${area.id}">
+                <div class="card border-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="card-title mb-1">${escapeHtml(area.name)}</h6>
+                                <small class="text-muted">
+                                    ${area.stores_count} store(s) • Created: ${area.created_at}
+                                </small>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-primary edit-area-btn" 
+                                        data-area-id="${area.id}" data-area-name="${escapeHtml(area.name)}" title="Edit Area">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger delete-area-btn" 
+                                        data-area-id="${area.id}" data-area-name="${escapeHtml(area.name)}" data-stores-count="${area.stores_count}" title="Delete Area">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+
+        // Update legacy form fields
+        updateLegacyAreaFields();
+    }
+
+    // Render stores in the UI
+    function renderStores() {
+        const container = document.getElementById('storesContainer');
+
+        if (userStores.length === 0) {
+            container.innerHTML = `
+            <div class="text-center py-4 text-muted">
+                <i class="fas fa-store fa-2x mb-2"></i>
+                <p>No stores assigned to this SPVR</p>
+                <button type="button" class="btn btn-info btn-sm" onclick="showAddStoreModal()">
+                    <i class="fas fa-plus me-2"></i>Add First Store
+                </button>
+            </div>
+        `;
+            return;
+        }
+
+        let html = '<div class="table-responsive"><table class="table table-hover">';
+        html += `
+        <thead class="table-info">
+            <tr>
+                <th>Store Name</th>
+                <th>Store Code</th>
+                <th>Area</th>
+                <th>Created</th>
+                <th width="100">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+        userStores.forEach(store => {
+            html += `
+            <tr id="store-${store.id}">
+                <td><strong>${escapeHtml(store.name)}</strong></td>
+                <td><code>${escapeHtml(store.code)}</code></td>
+                <td><span class="badge bg-success">${escapeHtml(store.area_name)}</span></td>
+                <td><small class="text-muted">${store.created_at}</small></td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-primary edit-store-btn" 
+                                data-store-id="${store.id}" data-store-name="${escapeHtml(store.name)}" data-store-code="${escapeHtml(store.code)}" title="Edit Store">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-danger delete-store-btn" 
+                                data-store-id="${store.id}" data-store-name="${escapeHtml(store.name)}" title="Delete Store">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        });
+
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+
+        // Update legacy form fields
+        updateLegacyStoreFields();
+    }
+
+    // Update legacy form fields for traditional form submission
+    function updateLegacyAreaFields() {
+        const container = document.getElementById('legacyAreasContainer');
+        container.innerHTML = '';
+
+        userAreas.forEach(area => {
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = 'assigned_areas';
+            input.value = area.id;
+            input.checked = true;
+            input.className = 'legacy-area-checkbox';
+            container.appendChild(input);
+        });
+    }
+
+    function updateLegacyStoreFields() {
+        const container = document.getElementById('legacyStoresContainer');
+        container.innerHTML = '';
+
+        userStores.forEach(store => {
+            const input = document.createElement('input');
+            input.type = 'checkbox';
+            input.name = 'assigned_stores';
+            input.value = store.id;
+            input.checked = true;
+            input.className = 'legacy-store-checkbox';
+            container.appendChild(input);
+        });
+    }
+
+    // Modal functions
+    function showAddAreaModal() {
+        document.getElementById('areaName').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('addAreaModal'));
+        modal.show();
+        setTimeout(() => document.getElementById('areaName').focus(), 500);
+    }
+
+    function showAddStoreModal() {
+        if (userAreas.length === 0) {
+            showAlert('Please add at least one area before adding stores', 'warning');
+            return;
+        }
+
+        // Populate area dropdown
+        const areaSelect = document.getElementById('storeArea');
+        areaSelect.innerHTML = '<option value="">Select Area</option>';
+        userAreas.forEach(area => {
+            areaSelect.innerHTML += `<option value="${area.id}">${area.name}</option>`;
+        });
+
+        document.getElementById('storeName').value = '';
+        document.getElementById('storeCode').value = '';
+        areaSelect.value = '';
+
+        const modal = new bootstrap.Modal(document.getElementById('addStoreModal'));
+        modal.show();
+        setTimeout(() => document.getElementById('storeName').focus(), 500);
+    }
+
+    function editArea(areaId, areaName) {
+        document.getElementById('editAreaId').value = areaId;
+        document.getElementById('editAreaName').value = areaName;
+
+        const modal = new bootstrap.Modal(document.getElementById('editAreaModal'));
+        modal.show();
+        setTimeout(() => document.getElementById('editAreaName').focus(), 500);
+    }
+
+    function editStore(storeId, storeName, storeCode) {
+        document.getElementById('editStoreId').value = storeId;
+        document.getElementById('editStoreName').value = storeName;
+        document.getElementById('editStoreCode').value = storeCode;
+
+        const modal = new bootstrap.Modal(document.getElementById('editStoreModal'));
+        modal.show();
+        setTimeout(() => document.getElementById('editStoreName').focus(), 500);
+    }
+
+    // AJAX operations
+    async function addArea() {
+        const areaName = document.getElementById('areaName').value.trim();
+
+        if (!areaName) {
+            showAlert('Please enter an area name', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/admin/api/users/${userId}/areas`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: areaName })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert(result.message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('addAreaModal')).hide();
+                loadUserAreas(); // Reload areas
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error adding area:', error);
+            showAlert('Error adding area', 'danger');
+        }
+    }
+
+    async function addStore() {
+        const storeName = document.getElementById('storeName').value.trim();
+        const storeCode = document.getElementById('storeCode').value.trim();
+        const areaId = document.getElementById('storeArea').value;
+
+        if (!storeName || !storeCode || !areaId) {
+            showAlert('Please fill in all fields', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/admin/api/users/${userId}/stores`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: storeName,
+                    code: storeCode,
+                    area_id: areaId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert(result.message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('addStoreModal')).hide();
+                loadUserStores(); // Reload stores
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error adding store:', error);
+            showAlert('Error adding store', 'danger');
+        }
+    }
+
+    async function updateArea() {
+        const areaId = document.getElementById('editAreaId').value;
+        const areaName = document.getElementById('editAreaName').value.trim();
+
+        if (!areaName) {
+            showAlert('Please enter an area name', 'warning');
+            return;
+        }
+
+        // Add loading state
+        const saveBtn = document.querySelector('#editAreaModal .btn-primary');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Saving...';
+        saveBtn.disabled = true;
+
+        try {
+            const response = await fetch(`/admin/api/users/${userId}/areas/${areaId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: areaName })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert(result.message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('editAreaModal')).hide();
+                loadUserAreas(); // Reload areas
+                loadUserStores(); // Reload stores to update area names
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error updating area:', error);
+            showAlert('Error updating area. Please try again.', 'danger');
+        } finally {
+            // Restore button state
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    }
+
+    async function updateStore() {
+        const storeId = document.getElementById('editStoreId').value;
+        const storeName = document.getElementById('editStoreName').value.trim();
+        const storeCode = document.getElementById('editStoreCode').value.trim();
+
+        if (!storeName || !storeCode) {
+            showAlert('Please fill in all fields', 'warning');
+            return;
+        }
+
+        // Add loading state
+        const saveBtn = document.querySelector('#editStoreModal .btn-primary');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Saving...';
+        saveBtn.disabled = true;
+
+        try {
+            const response = await fetch(`/admin/api/users/${userId}/stores/${storeId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: storeName,
+                    code: storeCode
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert(result.message, 'success');
+                bootstrap.Modal.getInstance(document.getElementById('editStoreModal')).hide();
+                loadUserStores(); // Reload stores
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error updating store:', error);
+            showAlert('Error updating store. Please try again.', 'danger');
+        } finally {
+            // Restore button state
+            saveBtn.innerHTML = originalText;
+            saveBtn.disabled = false;
+        }
+    }
+
+    async function deleteArea(areaId, areaName, storesCount) {
+        const message = storesCount > 0
+            ? `Are you sure you want to delete area "${areaName}"?\n\nThis will also remove ${storesCount} associated store(s) from this SPVR.`
+            : `Are you sure you want to delete area "${areaName}"?`;
+
+        if (!confirm(message)) {
+            return;
+        }
+
+        // Add visual feedback
+        const areaElement = document.getElementById(`area-${areaId}`);
+        if (areaElement) {
+            areaElement.style.opacity = '0.5';
+            areaElement.style.pointerEvents = 'none';
+        }
+
+        try {
+            const response = await fetch(`/admin/api/users/${userId}/areas/${areaId}`, {
+                method: 'DELETE'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert(result.message, 'success');
+                loadUserAreas(); // Reload areas
+                loadUserStores(); // Reload stores
+            } else {
+                showAlert(result.message, 'danger');
+                // Restore visual state on error
+                if (areaElement) {
+                    areaElement.style.opacity = '1';
+                    areaElement.style.pointerEvents = 'auto';
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting area:', error);
+            showAlert('Error deleting area. Please try again.', 'danger');
+            // Restore visual state on error
+            if (areaElement) {
+                areaElement.style.opacity = '1';
+                areaElement.style.pointerEvents = 'auto';
+            }
+        }
+    }
+
+    async function deleteStore(storeId, storeName) {
+        if (!confirm(`Are you sure you want to remove store "${storeName}" from this SPVR?`)) {
+            return;
+        }
+
+        // Add visual feedback
+        const storeElement = document.getElementById(`store-${storeId}`);
+        if (storeElement) {
+            storeElement.style.opacity = '0.5';
+            storeElement.style.pointerEvents = 'none';
+        }
+
+        try {
+            const response = await fetch(`/admin/api/users/${userId}/stores/${storeId}`, {
+                method: 'DELETE'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showAlert(result.message, 'success');
+                loadUserStores(); // Reload stores
+            } else {
+                showAlert(result.message, 'danger');
+                // Restore visual state on error
+                if (storeElement) {
+                    storeElement.style.opacity = '1';
+                    storeElement.style.pointerEvents = 'auto';
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting store:', error);
+            showAlert('Error deleting store. Please try again.', 'danger');
+            // Restore visual state on error
+            if (storeElement) {
+                storeElement.style.opacity = '1';
+                storeElement.style.pointerEvents = 'auto';
+            }
+        }
+    }
+
+    // Auto-generate store code from name
+    document.getElementById('storeName').addEventListener('input', function (e) {
+        const codeInput = document.getElementById('storeCode');
+        if (!codeInput.value) {
+            const name = e.target.value.trim();
+            if (name.length >= 3) {
+                const code = name.substring(0, 3).toUpperCase() +
+                    Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                codeInput.value = code;
+            }
+        }
+    });
+
+    // Form submission - ensure legacy fields are updated
+    document.getElementById('editUserForm').addEventListener('submit', function (e) {
+        // Update legacy fields before submission
+        updateLegacyAreaFields();
+        updateLegacyStoreFields();
+    });
+
+    // Event delegation for dynamically generated buttons
+    document.addEventListener('click', function(e) {
+        // Add visual feedback for all button clicks
+        if (e.target.closest('.btn')) {
+            const btn = e.target.closest('.btn');
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                btn.style.transform = '';
+            }, 150);
+        }
+        
+        // Edit Area button
+        if (e.target.closest('.edit-area-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.edit-area-btn');
+            const areaId = btn.dataset.areaId;
+            const areaName = btn.dataset.areaName;
+            console.log('Edit area clicked:', areaId, areaName); // Debug log
+            
+            if (areaId && areaName) {
+                editArea(parseInt(areaId), areaName);
+            } else {
+                console.error('Missing area data:', { areaId, areaName });
+                showAlert('Error: Missing area information', 'danger');
+            }
+        }
+        
+        // Delete Area button
+        if (e.target.closest('.delete-area-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.delete-area-btn');
+            const areaId = btn.dataset.areaId;
+            const areaName = btn.dataset.areaName;
+            const storesCount = parseInt(btn.dataset.storesCount) || 0;
+            console.log('Delete area clicked:', areaId, areaName, storesCount); // Debug log
+            
+            if (areaId && areaName) {
+                deleteArea(parseInt(areaId), areaName, storesCount);
+            } else {
+                console.error('Missing area data:', { areaId, areaName });
+                showAlert('Error: Missing area information', 'danger');
+            }
+        }
+        
+        // Edit Store button
+        if (e.target.closest('.edit-store-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.edit-store-btn');
+            const storeId = btn.dataset.storeId;
+            const storeName = btn.dataset.storeName;
+            const storeCode = btn.dataset.storeCode;
+            console.log('Edit store clicked:', storeId, storeName, storeCode); // Debug log
+            
+            if (storeId && storeName && storeCode) {
+                editStore(parseInt(storeId), storeName, storeCode);
+            } else {
+                console.error('Missing store data:', { storeId, storeName, storeCode });
+                showAlert('Error: Missing store information', 'danger');
+            }
+        }
+        
+        // Delete Store button
+        if (e.target.closest('.delete-store-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const btn = e.target.closest('.delete-store-btn');
+            const storeId = btn.dataset.storeId;
+            const storeName = btn.dataset.storeName;
+            console.log('Delete store clicked:', storeId, storeName); // Debug log
+            
+            if (storeId && storeName) {
+                deleteStore(parseInt(storeId), storeName);
+            } else {
+                console.error('Missing store data:', { storeId, storeName });
+                showAlert('Error: Missing store information', 'danger');
+            }
+        }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (e) {
+        // Enter key in modals
+        if (e.key === 'Enter') {
+            if (document.getElementById('addAreaModal').classList.contains('show')) {
+                e.preventDefault();
+                addArea();
+            } else if (document.getElementById('addStoreModal').classList.contains('show')) {
+                e.preventDefault();
+                addStore();
+            } else if (document.getElementById('editAreaModal').classList.contains('show')) {
+                e.preventDefault();
+                updateArea();
+            } else if (document.getElementById('editStoreModal').classList.contains('show')) {
+                e.preventDefault();
+                updateStore();
+            }
+        }
+    });
+</script>
+{% endblock %}

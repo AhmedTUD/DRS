@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+
+{% block title %}Create Report - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus me-2"></i>Create New Report
+            </h1>
+            <a href="{{ url_for('employee.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<form method="POST" id="reportForm">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Basic Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Basic Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="report_date" class="form-label">Date & Time</label>
+                            <input type="datetime-local" class="form-control" id="report_date" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="branch_id" class="form-label">Shop *</label>
+                            <div class="position-relative">
+                                <input type="text" class="form-control" id="branch_search" 
+                                       placeholder="Type to search for shop..." autocomplete="off">
+                                <input type="hidden" id="branch_id" name="branch_id" required>
+                            </div>
+                            <!-- Dropdown will be moved to body when shown -->
+                            <div id="branch_suggestions" style="display: none;"></div>
+                            <div class="form-text" id="selected_branch_info" style="display: none;">
+                                <small class="text-muted">Selected: <span id="branch_display"></span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Movement -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Sales Movement
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="fas fa-shopping-cart me-2"></i>Samsung & Competitors (LG, Araby, Others)
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="samsung_sales" class="form-label">Samsung</label>
+                            <textarea class="form-control" id="samsung_sales" name="samsung_sales" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="competitors_sales" class="form-label">Competitors</label>
+                            <textarea class="form-control" id="competitors_sales" name="competitors_sales" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Samsung Product Availability -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tv me-2"></i>Samsung Product Availability
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-box me-2"></i>Ditributor, Key Model, Flag
+                            </h6>
+                            <label for="tv_availability" class="form-label">TV</label>
+                            <textarea class="form-control" id="tv_availability" name="tv_availability" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-box me-2"></i>Ditributor, Key Model, Flag
+                            </h6>
+                            <label for="ha_availability" class="form-label">HA (Home Appliances)</label>
+                            <textarea class="form-control" id="ha_availability" name="ha_availability" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Store Activities -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-store me-2"></i>Store Activities
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="fas fa-handshake me-2"></i>Samsung & Competitors
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="sfo_pmt" class="form-label">SFO, PMT</label>
+                            <textarea class="form-control" id="sfo_pmt" name="sfo_pmt" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="display_activities" class="form-label">Display</label>
+                            <textarea class="form-control" id="display_activities" name="display_activities" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="sales_activities" class="form-label">Sales</label>
+                            <textarea class="form-control" id="sales_activities" name="sales_activities" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="store_issues" class="form-label">Store Issue (SDA, DOA)</label>
+                            <textarea class="form-control" id="store_issues" name="store_issues" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VOD -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-video me-2"></i>VOD
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Store & Dealer's Situation Subsection -->
+                    <div class="mb-3">
+                        <h6 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Store & Dealer's Situation
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="complaints" class="form-label">Complaints</label>
+                                <textarea class="form-control" id="complaints" name="complaints" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="issues" class="form-label">Issues</label>
+                                <textarea class="form-control" id="issues" name="issues" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="requirements" class="form-label">Requirements</label>
+                                <textarea class="form-control" id="requirements" name="requirements" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result & Action -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Result & Action
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- What I did? Subsection -->
+                    <div class="mb-3">
+                        <h6 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-check-circle me-2"></i>What I did?
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="actions_taken" class="form-label">Store</label>
+                                <textarea class="form-control" id="actions_taken" name="actions_taken" rows="4"></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="store_member_notes" class="form-label">Member</label>
+                                <textarea class="form-control" id="store_member_notes" name="store_member_notes" rows="4"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mb-4">
+                <a href="{{ url_for('employee.dashboard') }}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-save me-2"></i>Submit Report
+                </button>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card sticky-top">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Instructions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Search for your shop by typing any part of the name
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Fill in all relevant sections with detailed information
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Use clear and specific descriptions
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Review all fields before submitting
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-success me-2"></i>
+                            Submit button will show progress during save
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set current date and time
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('report_date').value = localDateTime;
+    
+    // Branch search functionality
+    const branchSearch = document.getElementById('branch_search');
+    const branchSuggestions = document.getElementById('branch_suggestions');
+    const branchIdInput = document.getElementById('branch_id');
+    const selectedBranchInfo = document.getElementById('selected_branch_info');
+    const branchDisplay = document.getElementById('branch_display');
+    
+    let searchTimeout;
+    let selectedBranch = null;
+    
+    // Function to position dropdown in top layer
+    function positionDropdown() {
+        const rect = branchSearch.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        
+        branchSuggestions.style.left = (rect.left + scrollLeft) + 'px';
+        branchSuggestions.style.top = (rect.bottom + scrollTop + 2) + 'px';
+        branchSuggestions.style.width = rect.width + 'px';
+    }
+    
+    // Function to show dropdown in top layer
+    function showDropdown() {
+        // Append to body if not already there
+        if (branchSuggestions.parentNode !== document.body) {
+            document.body.appendChild(branchSuggestions);
+        }
+        
+        positionDropdown();
+        branchSuggestions.classList.add('show');
+        branchSuggestions.style.display = 'block';
+        branchSuggestions.style.visibility = 'visible';
+    }
+    
+    // Function to hide dropdown with proper cleanup
+    function hideDropdown() {
+        branchSuggestions.classList.remove('show');
+        branchSuggestions.style.display = 'none';
+        branchSuggestions.style.visibility = 'hidden';
+    }
+    
+    // Enhanced branch search with better UX
+    branchSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        clearTimeout(searchTimeout);
+        
+        // Clear selection if user is typing
+        if (selectedBranch && this.value !== selectedBranch.name) {
+            branchIdInput.value = '';
+            selectedBranchInfo.style.display = 'none';
+            selectedBranch = null;
+        }
+        
+        if (query.length < 1) {
+            hideDropdown();
+            return;
+        }
+        
+        // Show loading state
+        branchSearch.classList.add('loading');
+        
+        searchTimeout = setTimeout(() => {
+            fetch(`{{ url_for('employee.search_branches') }}?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    branchSearch.classList.remove('loading');
+                    branchSuggestions.innerHTML = '';
+                    
+                    if (data.length > 0) {
+                        // Remove duplicates based on branch ID
+                        const uniqueBranches = data.filter((branch, index, self) => 
+                            index === self.findIndex(b => b.id === branch.id)
+                        );
+                        
+                        uniqueBranches.forEach((branch, index) => {
+                            const item = document.createElement('a');
+                            item.className = 'dropdown-item';
+                            item.href = '#';
+                            item.innerHTML = `
+                                <div>
+                                    <div class="fw-bold">${branch.name}</div>
+                                    <small class="text-muted">${branch.code} • ${branch.region}</small>
+                                </div>
+                            `;
+                            
+                            item.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                clearTimeout(hideTimeout);
+                                selectBranch(branch);
+                            });
+                            
+                            // Add hover effects for keyboard navigation
+                            item.addEventListener('mouseenter', function() {
+                                // Remove active class from other items
+                                branchSuggestions.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+                                this.classList.add('active');
+                            });
+                            
+                            branchSuggestions.appendChild(item);
+                        });
+                        
+                        // Show dropdown in top layer
+                        showDropdown();
+                    } else {
+                        branchSuggestions.innerHTML = '<div class="dropdown-item-text text-muted">No shops found</div>';
+                        // Show dropdown in top layer
+                        showDropdown();
+                    }
+                })
+                .catch(error => {
+                    branchSearch.classList.remove('loading');
+                    console.error('Error searching branches:', error);
+                    branchSuggestions.innerHTML = '<div class="dropdown-item-text text-danger">Error loading shops</div>';
+                    branchSuggestions.style.display = 'block';
+                });
+        }, 300);
+    });
+    
+    // Function to select a branch
+    function selectBranch(branch) {
+        selectedBranch = branch;
+        branchSearch.value = branch.name;
+        branchIdInput.value = branch.id;
+        branchDisplay.textContent = `${branch.name} (${branch.code}) - ${branch.region}`;
+        selectedBranchInfo.style.display = 'block';
+        hideDropdown();
+        
+        // Remove any validation errors and add success styling
+        branchSearch.classList.remove('is-invalid');
+        branchSearch.classList.add('is-valid');
+        
+        // Clear any pending hide timeouts
+        clearTimeout(hideTimeout);
+        
+        // Add a subtle success animation
+        selectedBranchInfo.style.animation = 'slideInFromTop 0.3s ease-out';
+    }
+    
+    // Hide suggestions when clicking outside (with delay for better UX)
+    let hideTimeout;
+    
+    document.addEventListener('click', function(e) {
+        // Check if click is outside both the input and dropdown
+        if (!branchSearch.contains(e.target) && !branchSuggestions.contains(e.target)) {
+            // Add a small delay to allow for click events on dropdown items
+            hideTimeout = setTimeout(() => {
+                hideDropdown();
+            }, 150);
+        }
+    });
+    
+    // Cancel hide timeout when interacting with dropdown
+    branchSuggestions.addEventListener('mouseenter', function() {
+        clearTimeout(hideTimeout);
+    });
+    
+    branchSuggestions.addEventListener('mouseleave', function() {
+        // Keep dropdown visible - don't auto-hide on mouse leave
+        clearTimeout(hideTimeout);
+    });
+    
+    // Prevent dropdown from closing when clicking inside it
+    branchSuggestions.addEventListener('mousedown', function(e) {
+        clearTimeout(hideTimeout);
+    });
+    
+    // Enhanced keyboard navigation for dropdown
+    branchSearch.addEventListener('keydown', function(e) {
+        const items = branchSuggestions.querySelectorAll('.dropdown-item:not(.dropdown-item-text)');
+        const activeItem = branchSuggestions.querySelector('.dropdown-item.active');
+        let activeIndex = activeItem ? Array.from(items).indexOf(activeItem) : -1;
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (branchSuggestions.style.display === 'none') {
+                showDropdown();
+            }
+            if (activeItem) activeItem.classList.remove('active');
+            activeIndex = (activeIndex + 1) % items.length;
+            if (items[activeIndex]) {
+                items[activeIndex].classList.add('active');
+                items[activeIndex].scrollIntoView({ block: 'nearest' });
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (branchSuggestions.style.display === 'none') {
+                showDropdown();
+            }
+            if (activeItem) activeItem.classList.remove('active');
+            activeIndex = activeIndex <= 0 ? items.length - 1 : activeIndex - 1;
+            if (items[activeIndex]) {
+                items[activeIndex].classList.add('active');
+                items[activeIndex].scrollIntoView({ block: 'nearest' });
+            }
+        } else if (e.key === 'Enter' && activeItem) {
+            e.preventDefault();
+            activeItem.click();
+        } else if (e.key === 'Escape') {
+            hideDropdown();
+            branchSearch.blur();
+        } else if (e.key === 'Tab') {
+            // Allow tab to close dropdown and move to next field
+            hideDropdown();
+        }
+    });
+    
+    // Show dropdown when input is focused and has content
+    branchSearch.addEventListener('focus', function() {
+        if (this.value.trim().length > 0 && branchSuggestions.children.length > 0) {
+            showDropdown();
+        }
+    });
+    
+    // Reposition dropdown on window resize or scroll
+    window.addEventListener('resize', function() {
+        if (branchSuggestions.style.display === 'block') {
+            positionDropdown();
+        }
+    });
+    
+    window.addEventListener('scroll', function() {
+        if (branchSuggestions.style.display === 'block') {
+            positionDropdown();
+        }
+    });
+    
+    // Form validation and submission
+    document.getElementById('reportForm').addEventListener('submit', function(e) {
+        const branchId = branchIdInput.value;
+        
+        if (!branchId) {
+            e.preventDefault();
+            branchSearch.classList.add('is-invalid');
+            branchSearch.focus();
+            alert('Please select a shop from the dropdown.');
+            return false;
+        }
+        
+        // Prevent double submission
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn.disabled) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Show loading state
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting Report...';
+        submitBtn.disabled = true;
+        
+        // Don't set timeout to re-enable - let the page redirect naturally
+        console.log('Form submitted successfully, branch ID:', branchId);
+    });
+    
+    // Load initial shops for quick selection
+    loadInitialBranches();
+    
+    function loadInitialBranches() {
+        fetch(`{{ url_for('employee.search_branches') }}?q=`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length === 1) {
+                    // Auto-select if user has only one shop
+                    selectBranch(data[0]);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading initial shops:', error);
+            });
+    }
+});
+</script>
+{% endblock %}

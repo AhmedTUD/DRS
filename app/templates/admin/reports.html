@@ -1,0 +1,674 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-file-alt me-2"></i>Reports Management
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-filter me-2"></i>Filters
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="filterForm">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="employee_name" class="form-label">SPVR Name</label>
+                            <input type="text" class="form-control" id="employee_name" name="employee_name" 
+                                   placeholder="Search by name...">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="employee_code" class="form-label">SPVR Code</label>
+                            <input type="text" class="form-control" id="employee_code" name="employee_code" 
+                                   placeholder="Search by code...">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="store_name" class="form-label">Shop Name</label>
+                            <input type="text" class="form-control" id="store_name" name="store_name" 
+                                   placeholder="Search by shop...">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date">
+                        </div>
+                        <div class="col-md-9 mb-3 d-flex align-items-end">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-primary" onclick="loadReports()">
+                                    <i class="fas fa-search me-2"></i>Search
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="clearFilters()">
+                                    <i class="fas fa-times me-2"></i>Clear
+                                </button>
+                                <button type="button" class="btn btn-outline-info me-2" onclick="previewExport()">
+                                    <i class="fas fa-eye me-2"></i>Preview
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="exportReports()">
+                                    <i class="fas fa-download me-2"></i>Export Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>Reports
+                </h5>
+                <span id="reportCount" class="badge bg-primary">0 reports</span>
+            </div>
+            <div class="card-body">
+                <div id="loadingSpinner" class="text-center py-5" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Loading reports...</p>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-striped" id="reportsTable">
+                        <thead>
+                            <tr>
+                                <th>SPVR Name</th>
+                                <th>SPVR Code</th>
+                                <th>Shop Name</th>
+                                <th>Shop Code</th>
+                                <th>Region</th>
+                                <th>Report Date</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                                <th>Comments</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody">
+                            <!-- Reports will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="noReports" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No reports found</h5>
+                    <p class="text-muted">Try adjusting your filters or check back later.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadReports();
+    
+    // Auto-search on input change with debounce
+    const inputs = document.querySelectorAll('#filterForm input');
+    inputs.forEach(input => {
+        let timeout;
+        input.addEventListener('input', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(loadReports, 500);
+        });
+    });
+});
+
+function loadReports() {
+    const formData = new FormData(document.getElementById('filterForm'));
+    const params = new URLSearchParams(formData);
+    
+    document.getElementById('loadingSpinner').style.display = 'block';
+    document.getElementById('reportsTable').style.display = 'none';
+    document.getElementById('noReports').style.display = 'none';
+    
+    fetch(`{{ url_for('admin.api_reports') }}?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            
+            const tbody = document.getElementById('reportsTableBody');
+            tbody.innerHTML = '';
+            
+            if (data.length > 0) {
+                data.forEach(report => {
+                    const row = tbody.insertRow();
+                    row.id = `report-row-${report.id}`;
+                    
+                    // Status badge
+                    const statusMap = {
+                        'new': { text: 'جديد', class: 'bg-primary' },
+                        'under_review': { text: 'تحت المراجعة', class: 'bg-warning' },
+                        'reviewed': { text: 'تمت المراجعة', class: 'bg-success' },
+                        'needs_revision': { text: 'يحتاج تعديل', class: 'bg-danger' }
+                    };
+                    const status = report.status || 'new';
+                    const statusInfo = statusMap[status] || { text: status, class: 'bg-secondary' };
+                    
+                    row.innerHTML = `
+                        <td>${report.employee_name}</td>
+                        <td>${report.employee_code}</td>
+                        <td>${report.store_name}</td>
+                        <td>${report.store_code}</td>
+                        <td>${report.area}</td>
+                        <td>${report.report_date}</td>
+                        <td>${report.created_at}</td>
+                        <td>
+                            <span class="badge ${statusInfo.class}">${statusInfo.text}</span>
+                            ${!report.is_read ? '<span class="badge bg-danger ms-1">New</span>' : ''}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-info" 
+                                    onclick="openCommentsModal(${report.id})"
+                                    title="View/Add Comments">
+                                <i class="fas fa-comments"></i>
+                                <span class="badge bg-info ms-1">${report.comments_count || 0}</span>
+                            </button>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="viewReportDetails(${report.id})"
+                                        title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="deleteReport(${report.id})"
+                                        title="Delete Report">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                });
+                
+                document.getElementById('reportsTable').style.display = 'table';
+                document.getElementById('reportCount').textContent = `${data.length} reports`;
+            } else {
+                document.getElementById('noReports').style.display = 'block';
+                document.getElementById('reportCount').textContent = '0 reports';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading reports:', error);
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('noReports').style.display = 'block';
+        });
+}
+
+function clearFilters() {
+    document.getElementById('filterForm').reset();
+    loadReports();
+}
+
+function previewExport() {
+    window.open(`{{ url_for('admin.preview_export') }}`, '_blank');
+}
+
+function exportReports() {
+    const formData = new FormData(document.getElementById('filterForm'));
+    const params = new URLSearchParams(formData);
+    
+    window.location.href = `{{ url_for('admin.export_reports') }}?${params}`;
+}
+
+async function deleteReport(reportId) {
+    if (!confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/admin/api/reports/${reportId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            // Show success message
+            showToast('Report deleted successfully', 'success');
+            
+            // Remove the row from the table
+            const row = document.getElementById(`report-row-${reportId}`);
+            if (row) {
+                row.remove();
+            }
+            
+            // Update report count
+            const currentCount = parseInt(document.getElementById('reportCount').textContent);
+            const newCount = currentCount - 1;
+            document.getElementById('reportCount').textContent = `${newCount} report${newCount !== 1 ? 's' : ''}`;
+            
+            // If no more reports, show empty message
+            const tbody = document.getElementById('reportsTableBody');
+            if (tbody.children.length === 0) {
+                document.getElementById('reportsTable').style.display = 'none';
+                document.getElementById('noReports').style.display = 'block';
+            }
+        } else {
+            showToast(result.message || 'Failed to delete report', 'danger');
+        }
+    } catch (error) {
+        console.error('Error deleting report:', error);
+        showToast('Error deleting report', 'danger');
+    }
+}
+
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '1055';
+        document.body.appendChild(container);
+    }
+    
+    const toastHtml = `
+        <div class="toast align-items-center text-bg-${type} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = container.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+    toast.show();
+    
+    // Remove element after it's hidden
+    toastElement.addEventListener('hidden.bs.toast', () => {
+        toastElement.remove();
+    });
+}
+
+// Comments Modal Functions
+let currentReportId = null;
+
+function openCommentsModal(reportId) {
+    currentReportId = reportId;
+    loadComments(reportId);
+    const modal = new bootstrap.Modal(document.getElementById('commentsModal'));
+    modal.show();
+}
+
+function loadComments(reportId) {
+    const commentsList = document.getElementById('commentsList');
+    commentsList.innerHTML = '<div class="text-center py-3"><div class="spinner-border"></div></div>';
+    
+    fetch(`/admin/api/reports/${reportId}/comments`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayComments(data.comments);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading comments:', error);
+            commentsList.innerHTML = '<div class="alert alert-danger">Error loading comments</div>';
+        });
+}
+
+function displayComments(comments) {
+    const commentsList = document.getElementById('commentsList');
+    
+    if (comments.length === 0) {
+        commentsList.innerHTML = '<p class="text-muted text-center">No comments yet</p>';
+        return;
+    }
+    
+    commentsList.innerHTML = '';
+    comments.forEach(comment => {
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'card mb-2 border-start border-primary border-3';
+        commentDiv.id = `comment-${comment.id}`;
+        
+        // Escape HTML and quotes for safe display
+        const escapedText = comment.comment_text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+        
+        const escapedTextForEdit = comment.comment_text
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'")
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, '\\n');
+        
+        commentDiv.innerHTML = `
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <strong class="text-primary">
+                            <i class="fas fa-user-shield me-1"></i>${comment.commenter_name}
+                        </strong>
+                        <br>
+                        <small class="text-muted">
+                            <i class="far fa-clock me-1"></i>${comment.created_at}
+                        </small>
+                    </div>
+                    <div class="btn-group comment-actions" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick='editComment(${comment.id}, \`${escapedTextForEdit}\`)' title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteComment(${comment.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="comment-text-${comment.id}" style="white-space: pre-wrap;">${escapedText}</div>
+            </div>
+        `;
+        commentsList.appendChild(commentDiv);
+    });
+}
+
+function editComment(commentId, currentText) {
+    const commentTextElement = document.getElementById(`comment-text-${commentId}`);
+    
+    // Store original text for cancel
+    commentTextElement.dataset.originalText = currentText;
+    
+    // Create edit form
+    const textarea = document.createElement('textarea');
+    textarea.className = 'form-control mb-2';
+    textarea.id = `edit-text-${commentId}`;
+    textarea.rows = 4;
+    textarea.value = currentText;
+    
+    const buttonGroup = document.createElement('div');
+    buttonGroup.className = 'btn-group';
+    
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-sm btn-success';
+    saveBtn.innerHTML = '<i class="fas fa-save me-1"></i> Save';
+    saveBtn.onclick = () => saveCommentEdit(commentId);
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-sm btn-secondary';
+    cancelBtn.innerHTML = '<i class="fas fa-times me-1"></i> Cancel';
+    cancelBtn.onclick = () => cancelCommentEdit(commentId);
+    
+    buttonGroup.appendChild(saveBtn);
+    buttonGroup.appendChild(cancelBtn);
+    
+    const editForm = document.createElement('div');
+    editForm.className = 'edit-comment-form';
+    editForm.appendChild(textarea);
+    editForm.appendChild(buttonGroup);
+    
+    commentTextElement.innerHTML = '';
+    commentTextElement.appendChild(editForm);
+    
+    // Focus on textarea
+    textarea.focus();
+}
+
+function saveCommentEdit(commentId) {
+    const newText = document.getElementById(`edit-text-${commentId}`).value.trim();
+    
+    if (!newText) {
+        showToast('Comment cannot be empty', 'warning');
+        return;
+    }
+    
+    fetch(`/admin/api/comments/${commentId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            comment_text: newText
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Comment updated successfully', 'success');
+            loadComments(currentReportId);
+        } else {
+            showToast(data.message || 'Error updating comment', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating comment:', error);
+        showToast('Error updating comment', 'danger');
+    });
+}
+
+function cancelCommentEdit(commentId) {
+    const commentTextElement = document.getElementById(`comment-text-${commentId}`);
+    const originalText = commentTextElement.dataset.originalText;
+    
+    // Escape HTML for safe display
+    const escapedText = originalText
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    
+    commentTextElement.innerHTML = escapedText;
+    commentTextElement.style.whiteSpace = 'pre-wrap';
+}
+
+function deleteComment(commentId) {
+    if (!confirm('Are you sure you want to delete this comment?')) {
+        return;
+    }
+    
+    fetch(`/admin/api/comments/${commentId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Comment deleted successfully', 'success');
+            loadComments(currentReportId);
+            loadReports(); // Refresh reports table to update comment count
+        } else {
+            showToast(data.message || 'Error deleting comment', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting comment:', error);
+        showToast('Error deleting comment', 'danger');
+    });
+}
+
+function addComment() {
+    const commentText = document.getElementById('newCommentText').value.trim();
+    const newStatus = document.getElementById('reportStatus').value;
+    
+    // Allow empty comment if status is being changed
+    if (!commentText && !newStatus) {
+        showToast('Please enter a comment or select a status', 'warning');
+        return;
+    }
+    
+    fetch(`/admin/api/reports/${currentReportId}/comments`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            comment_text: commentText,
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            if (commentText) {
+                showToast('Comment added successfully', 'success');
+            } else {
+                showToast('Status updated successfully', 'success');
+            }
+            document.getElementById('newCommentText').value = '';
+            loadComments(currentReportId);
+            loadReports(); // Refresh the reports table
+        } else {
+            showToast(data.message || 'Error updating', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating:', error);
+        showToast('Error updating', 'danger');
+    });
+}
+
+function updateStatusOnly() {
+    const newStatus = document.getElementById('reportStatus').value;
+    
+    if (!newStatus) {
+        showToast('Please select a status', 'warning');
+        return;
+    }
+    
+    fetch(`/admin/api/reports/${currentReportId}/status`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            status: newStatus,
+            mark_as_read: true
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Status updated successfully', 'success');
+            loadReports(); // Refresh the reports table
+        } else {
+            showToast(data.message || 'Error updating status', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating status:', error);
+        showToast('Error updating status', 'danger');
+    });
+}
+
+function viewReportDetails(reportId) {
+    // Mark report as read
+    fetch(`/admin/api/reports/${reportId}/status`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            mark_as_read: true
+        })
+    });
+    
+    // Open report details in new tab or modal
+    window.open(`/admin/report/${reportId}`, '_blank');
+}
+</script>
+
+<style>
+.edit-comment-form {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.comment-actions {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.card:hover .comment-actions {
+    opacity: 1;
+}
+
+#commentsList .card {
+    transition: all 0.2s;
+}
+
+#commentsList .card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+</style>
+
+<!-- Comments Modal -->
+<div class="modal fade" id="commentsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-comments me-2"></i>Report Comments
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Existing Comments -->
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2">Previous Comments</h6>
+                    <div id="commentsList">
+                        <!-- Comments will be loaded here -->
+                    </div>
+                </div>
+                
+                <!-- Add New Comment -->
+                <div>
+                    <h6 class="border-bottom pb-2">Add New Comment or Update Status</h6>
+                    <div class="mb-3">
+                        <label for="reportStatus" class="form-label">Report Status</label>
+                        <select class="form-select" id="reportStatus">
+                            <option value="">-- Keep Current Status --</option>
+                            <option value="new">جديد (New)</option>
+                            <option value="under_review">تحت المراجعة (Under Review)</option>
+                            <option value="reviewed">تمت المراجعة (Reviewed)</option>
+                            <option value="needs_revision">يحتاج تعديل (Needs Revision)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="newCommentText" class="form-label">Comment (Optional)</label>
+                        <textarea class="form-control" id="newCommentText" rows="4" 
+                                  placeholder="Enter your comment here (optional if changing status)..."></textarea>
+                        <small class="text-muted">You can change status without adding a comment</small>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary" onclick="addComment()">
+                            <i class="fas fa-paper-plane me-2"></i>Save Changes
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('newCommentText').value = ''; document.getElementById('reportStatus').value = '';">
+                            <i class="fas fa-eraser me-2"></i>Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
