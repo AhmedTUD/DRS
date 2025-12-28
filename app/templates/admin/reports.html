@@ -188,18 +188,11 @@ function loadReports() {
                             </button>
                         </td>
                         <td>
-                            <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-primary" 
-                                        onclick="viewReportDetails(${report.id})"
-                                        title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" 
-                                        onclick="deleteReport(${report.id})"
-                                        title="Delete Report">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="deleteReport(${report.id})"
+                                    title="Delete Report">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     `;
                 });
@@ -576,22 +569,6 @@ function updateStatusOnly() {
         console.error('Error updating status:', error);
         showToast('Error updating status', 'danger');
     });
-}
-
-function viewReportDetails(reportId) {
-    // Mark report as read
-    fetch(`/admin/api/reports/${reportId}/status`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            mark_as_read: true
-        })
-    });
-    
-    // Open report details in new tab or modal
-    window.open(`/admin/report/${reportId}`, '_blank');
 }
 </script>
 
