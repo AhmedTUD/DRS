@@ -163,7 +163,6 @@ def create_report():
             # Store Activities
             sfo_pmt = request.form.get('sfo_pmt', '')
             display_activities = request.form.get('display_activities', '')
-            sales_activities = request.form.get('sales_activities', '')
             store_issues = request.form.get('store_issues', '')
             
             # VOD
@@ -189,7 +188,6 @@ def create_report():
                 ha_availability=ha_availability,
                 sfo_pmt=sfo_pmt,
                 display_activities=display_activities,
-                sales_activities=sales_activities,
                 store_issues=store_issues,
                 vod_notes=vod_notes,
                 complaints=complaints,
@@ -214,6 +212,113 @@ def create_report():
             return redirect(url_for('employee.create_report'))
     
     return render_template('employee/report_form.html', user=user)
+
+@bp.route('/batch-reports', methods=['GET'])
+@login_required
+def batch_reports():
+    """صفحة إنشاء تقارير متعددة"""
+    user = User.query.get(session['user_id'])
+    return render_template('employee/batch_reports.html', user=user)
+
+@bp.route('/submit-batch-reports', methods=['POST'])
+@login_required
+def submit_batch_reports():
+    """معالجة إرسال التقارير المتعددة"""
+    user = User.query.get(session['user_id'])
+    
+    try:
+        data = request.get_json()
+        reports_data = data.get('reports', [])
+        report_date_str = data.get('report_date', '')
+        
+        if not reports_data:
+            return jsonify({'success': False, 'message': 'No reports provided'})
+        
+        print(f"📝 Batch submission from user {user.employee_name}")
+        print(f"📋 Number of reports: {len(reports_data)}")
+        
+        # Parse report date
+        report_date = None
+        if report_date_str:
+            try:
+                report_date = datetime.fromisoformat(report_date_str.replace('T', ' '))
+            except:
+                report_date = datetime.utcnow()
+        else:
+            report_date = datetime.utcnow()
+        
+        created_reports = []
+        
+        for i, report_data in enumerate(reports_data):
+            branch_id = report_data.get('branch_id')
+            
+            if not branch_id:
+                return jsonify({'success': False, 'message': f'No shop selected for report {i+1}'})
+            
+            # Get branch and validate ownership
+            branch = Branch.query.get(branch_id)
+            if not branch:
+                return jsonify({'success': False, 'message': f'Invalid shop for report {i+1}'})
+            
+            if branch.owner_user_id != user.id:
+                return jsonify({'success': False, 'message': f'You do not have access to shop in report {i+1}'})
+            
+            # Create area and store for backward compatibility
+            region_name = branch.region.name if branch.region else 'Default Region'
+            area = Area.query.filter_by(name=region_name).first()
+            if not area:
+                area = Area(name=region_name)
+                db.session.add(area)
+                db.session.flush()
+            
+            store = Store.query.filter_by(code=branch.code).first()
+            if not store:
+                store = Store(name=branch.name, code=branch.code, area_id=area.id)
+                db.session.add(store)
+                db.session.flush()
+            else:
+                if store.name != branch.name:
+                    store.name = branch.name
+                if store.area_id != area.id:
+                    store.area_id = area.id
+            
+            # Create report
+            report = Report(
+                user_id=user.id,
+                area_id=area.id,
+                store_id=store.id,
+                report_date=report_date,
+                samsung_sales=report_data.get('samsung_sales', ''),
+                competitors_sales=report_data.get('competitors_sales', ''),
+                tv_availability=report_data.get('tv_availability', ''),
+                ha_availability=report_data.get('ha_availability', ''),
+                sfo_pmt=report_data.get('sfo_pmt', ''),
+                display_activities=report_data.get('display_activities', ''),
+                store_issues=report_data.get('store_issues', ''),
+                complaints=report_data.get('complaints', ''),
+                issues=report_data.get('issues', ''),
+                requirements=report_data.get('requirements', ''),
+                actions_taken=report_data.get('actions_taken', ''),
+                store_member_notes=report_data.get('store_member_notes', '')
+            )
+            
+            db.session.add(report)
+            created_reports.append(report)
+        
+        db.session.commit()
+        
+        print(f"✅ Successfully created {len(created_reports)} reports")
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Successfully submitted {len(created_reports)} reports',
+            'count': len(created_reports)
+        })
+        
+    except Exception as e:
+        print(f"❌ Error in batch submission: {str(e)}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error submitting reports: {str(e)}'})
 
 @bp.route('/test-report')
 @login_required
@@ -420,9 +525,10 @@ def api_view_reports():
             'area': report.area.name,
             'branch_name': branch_name,
             'spvr_name': report.employee.employee_name,
-            'report_date': report_date_local.strftime('%Y-%m-%d') if report_date_local else '',
-            'report_time': report_date_local.strftime('%H:%M') if report_date_local else '',
-            'created_at': created_at_local.strftime('%Y-%m-%d %H:%M') if created_at_local else ''
+            'report_date': report_date_local.strftime('%Y-%m-%d') if report_date_local else 'N/A',
+            'report_time': report_date_local.strftime('%H:%M') if report_date_local else 'N/A',
+            'created_at': created_at_local.strftime('%Y-%m-%d %H:%M') if created_at_local else 'N/A',
+            'submitted_time': created_at_local.strftime('%H:%M') if created_at_local else 'N/A'
         })
     
     return jsonify(reports_data)
