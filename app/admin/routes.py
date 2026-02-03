@@ -1062,8 +1062,13 @@ def export_reports():
     # Remove default sheet
     wb.remove(wb.active)
     
+    # Create summary sheet first
+    summary_ws = wb.create_sheet(title="Reports Summary")
+    _create_summary_sheet(summary_ws, spvr_reports, start_date, end_date)
+    
     # Create a sheet for each SPVR with enhanced naming
     used_sheet_names = set()
+    used_sheet_names.add("Reports Summary")  # Reserve summary sheet name
     
     for spvr_key, spvr_report_list in spvr_reports.items():
         spvr_code, spvr_name = spvr_key.split('_', 1)
@@ -1086,6 +1091,205 @@ def export_reports():
         as_attachment=True,
         download_name=filename
     )
+
+
+def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
+    """Create summary sheet with employee statistics and missing employees in red"""
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from app.models import User, Store, Branch
+    
+    # Define colors and styles
+    header_color = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')  # Blue header
+    summary_color = PatternFill(start_color='E2EFDA', end_color='E2EFDA', fill_type='solid')  # Light green for active employees
+    missing_color = PatternFill(start_color='FFE6E6', end_color='FFE6E6', fill_type='solid')  # Light red for missing employees
+    
+    header_font = Font(name='Calibri', size=12, bold=True, color='FFFFFF')
+    data_font = Font(name='Calibri', size=10, bold=False, color='000000')
+    missing_font = Font(name='Calibri', size=10, bold=True, color='CC0000')  # Red bold for missing
+    
+    center_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    left_alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
+    
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # Title
+    ws.merge_cells('A1:F1')
+    title_cell = ws.cell(row=1, column=1)
+    title_cell.value = f"Reports Summary - From {start_date or 'Beginning'} To {end_date or 'End'}"
+    title_cell.font = Font(name='Calibri', size=14, bold=True, color='000000')
+    title_cell.alignment = center_alignment
+    
+    # Headers
+    headers = ['Employee Code', 'Employee Name', 'Stores Count', 'Reports Count', 'Last Report', 'Status']
+    for col_idx, header in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_color
+        cell.alignment = center_alignment
+        cell.border = thin_border
+    
+    # Get all employees (non-admin users)
+    all_employees = User.query.filter_by(is_admin=False).all()
+    
+    # Create employee statistics
+    employee_stats = {}
+    
+    # Process employees who submitted reports
+    for spvr_key, reports in spvr_reports.items():
+        spvr_code, spvr_name = spvr_key.split('_', 1)
+        
+        # Get unique stores reported by this employee
+        unique_stores = set()
+        last_report_date = None
+        
+        for report in reports:
+            unique_stores.add(report.store.id)
+            if not last_report_date or report.report_date > last_report_date:
+                last_report_date = report.report_date
+        
+        employee_stats[spvr_code] = {
+            'name': spvr_name,
+            'code': spvr_code,
+            'stores_count': len(unique_stores),
+            'reports_count': len(reports),
+            'last_report': last_report_date,
+            'has_reports': True
+        }
+    
+    # Add employees who didn't submit reports
+    for employee in all_employees:
+        if employee.employee_code not in employee_stats:
+            employee_stats[employee.employee_code] = {
+                'name': employee.employee_name,
+                'code': employee.employee_code,
+                'stores_count': 0,
+                'reports_count': 0,
+                'last_report': None,
+                'has_reports': False
+            }
+    
+    # Sort employees by name
+    sorted_employees = sorted(employee_stats.values(), key=lambda x: x['name'])
+    
+    # Write data
+    row_idx = 4
+    for emp in sorted_employees:
+        # Employee code
+        cell = ws.cell(row=row_idx, column=1)
+        cell.value = emp['code']
+        cell.border = thin_border
+        cell.alignment = center_alignment
+        
+        # Employee name
+        cell = ws.cell(row=row_idx, column=2)
+        cell.value = emp['name']
+        cell.border = thin_border
+        cell.alignment = left_alignment
+        
+        # Stores count
+        cell = ws.cell(row=row_idx, column=3)
+        cell.value = emp['stores_count']
+        cell.border = thin_border
+        cell.alignment = center_alignment
+        
+        # Reports count
+        cell = ws.cell(row=row_idx, column=4)
+        cell.value = emp['reports_count']
+        cell.border = thin_border
+        cell.alignment = center_alignment
+        
+        # Last report date
+        cell = ws.cell(row=row_idx, column=5)
+        if emp['last_report']:
+            last_report_local = utc_to_egypt_time(emp['last_report'])
+            cell.value = last_report_local.strftime('%Y-%m-%d') if last_report_local else ''
+        else:
+            cell.value = 'No Reports'
+        cell.border = thin_border
+        cell.alignment = center_alignment
+        
+        # Status
+        cell = ws.cell(row=row_idx, column=6)
+        if emp['has_reports']:
+            cell.value = 'Active'
+            cell.fill = summary_color
+            cell.font = data_font
+        else:
+            cell.value = 'No Reports'
+            cell.fill = missing_color
+            cell.font = missing_font
+        cell.border = thin_border
+        cell.alignment = center_alignment
+        
+        # Apply row formatting
+        for col in range(1, 7):
+            row_cell = ws.cell(row=row_idx, column=col)
+            if not emp['has_reports']:
+                row_cell.fill = missing_color
+                if col != 6:  # Don't override status cell font
+                    row_cell.font = missing_font
+            else:
+                if col != 6:  # Don't override status cell fill
+                    row_cell.font = data_font
+        
+        row_idx += 1
+    
+    # Set column widths
+    column_widths = [15, 25, 15, 15, 15, 15]
+    for col_idx, width in enumerate(column_widths, 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = width
+    
+    # Add summary statistics at the bottom
+    summary_row = row_idx + 2
+    
+    total_employees = len(sorted_employees)
+    active_employees = sum(1 for emp in sorted_employees if emp['has_reports'])
+    missing_employees = total_employees - active_employees
+    total_reports = sum(emp['reports_count'] for emp in sorted_employees)
+    total_stores = sum(emp['stores_count'] for emp in sorted_employees)
+    
+    # Summary headers
+    ws.merge_cells(f'A{summary_row}:B{summary_row}')
+    summary_header = ws.cell(row=summary_row, column=1)
+    summary_header.value = "General Statistics"
+    summary_header.font = Font(name='Calibri', size=12, bold=True, color='000000')
+    summary_header.alignment = center_alignment
+    
+    # Summary data
+    summary_data = [
+        ('Total Employees:', total_employees),
+        ('Active Employees:', active_employees),
+        ('Missing Employees:', missing_employees),
+        ('Total Reports:', total_reports),
+        ('Total Stores Reported:', total_stores)
+    ]
+    
+    for i, (label, value) in enumerate(summary_data):
+        label_cell = ws.cell(row=summary_row + 1 + i, column=1)
+        label_cell.value = label
+        label_cell.font = Font(name='Calibri', size=10, bold=True)
+        label_cell.alignment = left_alignment
+        
+        value_cell = ws.cell(row=summary_row + 1 + i, column=2)
+        value_cell.value = value
+        value_cell.font = data_font
+        value_cell.alignment = center_alignment
+        
+        # Highlight missing employees count in red
+        if label == 'Missing Employees:' and value > 0:
+            value_cell.font = Font(name='Calibri', size=10, bold=True, color='CC0000')
+    
+    # Freeze panes
+    ws.freeze_panes = 'A4'
+    
+    return ws
 
 
 def _create_sheet_name(spvr_code, spvr_name, is_multi_spvr, used_names):
@@ -1202,7 +1406,6 @@ def _format_excel_sheet_enhanced(ws, reports, spvr_name, spvr_code):
         # Store Activities
         {'header': 'SFO, PMT', 'width': 25},
         {'header': 'Display', 'width': 25},
-        {'header': 'Sales', 'width': 25},
         {'header': 'Store Issue (SDA, DOA)', 'width': 25},
         
         # VOD & Result & Action
@@ -1219,9 +1422,9 @@ def _format_excel_sheet_enhanced(ws, reports, spvr_name, spvr_code):
         {'name': 'AM-SPVR & Store Information', 'start': 1, 'end': 7, 'color': am_spvr_color},
         {'name': 'Sales Movement', 'start': 8, 'end': 9, 'color': sales_color},
         {'name': 'Samsung Product Availability', 'start': 10, 'end': 11, 'color': product_color},
-        {'name': 'Store Activities', 'start': 12, 'end': 15, 'color': activities_color},
-        {'name': 'VOD', 'start': 16, 'end': 18, 'color': vod_result_color},
-        {'name': 'Result & Action', 'start': 19, 'end': 20, 'color': vod_result_color}
+        {'name': 'Store Activities', 'start': 12, 'end': 14, 'color': activities_color},
+        {'name': 'VOD', 'start': 15, 'end': 17, 'color': vod_result_color},
+        {'name': 'Result & Action', 'start': 18, 'end': 19, 'color': vod_result_color}
     ]
     
     # Row 2: Sub Headers
@@ -1231,9 +1434,9 @@ def _format_excel_sheet_enhanced(ws, reports, spvr_name, spvr_code):
         {'name': 'Samsung & Competitors (LG, Araby, Others)', 'start': 8, 'end': 9, 'color': sales_color},
         {'name': 'Ditributor, Key Model, Flag', 'start': 10, 'end': 10, 'color': product_color},
         {'name': 'Ditributor, Key Model, Flag', 'start': 11, 'end': 11, 'color': product_color},
-        {'name': 'Samsung & Competitors', 'start': 12, 'end': 15, 'color': activities_color},
-        {'name': 'Store & Dealer\'s Situation', 'start': 16, 'end': 18, 'color': bright_yellow},
-        {'name': 'What I did ?', 'start': 19, 'end': 20, 'color': bright_yellow}
+        {'name': 'Samsung & Competitors', 'start': 12, 'end': 14, 'color': activities_color},
+        {'name': 'Store & Dealer\'s Situation', 'start': 15, 'end': 17, 'color': bright_yellow},
+        {'name': 'What I did ?', 'start': 18, 'end': 19, 'color': bright_yellow}
     ]
     
     # Write and format main headers (Row 1)
@@ -1285,7 +1488,7 @@ def _format_excel_sheet_enhanced(ws, reports, spvr_name, spvr_code):
         am_spvr_color, am_spvr_color, am_spvr_color, am_spvr_color, am_spvr_color, am_spvr_color, am_spvr_color,  # AM-SPVR & Store Information
         sales_color, sales_color,  # Sales Movement
         product_color, product_color,  # Samsung Product Availability
-        activities_color, activities_color, activities_color, activities_color,  # Store Activities
+        activities_color, activities_color, activities_color,  # Store Activities (removed Sales)
         bright_yellow, bright_yellow, bright_yellow,  # VOD - Complaints, Issues, Requirements
         bright_yellow, bright_yellow   # Result & Action - Store, Member
     ]
@@ -1338,7 +1541,6 @@ def _format_excel_sheet_enhanced(ws, reports, spvr_name, spvr_code):
             report.ha_availability or '',
             report.sfo_pmt or '',
             report.display_activities or '',
-            report.sales_activities or '',
             report.store_issues or '',
             report.complaints or '',
             report.issues or '',
