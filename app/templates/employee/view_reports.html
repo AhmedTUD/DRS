@@ -94,7 +94,7 @@
                                 <th>Shop Name</th>
                                 <th>Shop Code</th>
                                 <th>Region</th>
-                                <th>Time</th>
+                                <th>Submitted Time</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -161,7 +161,11 @@ function loadReports() {
                         <td>${report.store_name}</td>
                         <td><code>${report.store_code}</code></td>
                         <td><span class="badge bg-info">${report.area}</span></td>
-                        <td><small class="text-muted">${report.report_time}</small></td>
+                        <td>
+                            <div class="text-muted">
+                                <small><i class="fas fa-upload me-1"></i>Submitted: ${report.submitted_time}</small>
+                            </div>
+                        </td>
                         <td>
                             <a href="/employee/view_report/${report.id}" 
                                class="btn btn-sm btn-outline-primary" title="View Report">
