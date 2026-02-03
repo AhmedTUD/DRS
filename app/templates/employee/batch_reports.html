@@ -1,0 +1,801 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Reports - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-layer-group me-2"></i>Create Multiple Reports
+            </h1>
+            <div>
+                <a href="{{ url_for('employee.create_report') }}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-file-alt me-2"></i>Single Report
+                </a>
+                <a href="{{ url_for('employee.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Batch Controls -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>Batch Controls
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="batch_date" class="form-label">Report Date & Time</label>
+                        <input type="datetime-local" class="form-control" id="batch_date" readonly>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Reports Count</label>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-info fs-6 me-3" id="reports_count">0 Reports</span>
+                            <button type="button" class="btn btn-success btn-sm" id="add_report_btn">
+                                <i class="fas fa-plus me-1"></i>Add Report
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Container -->
+        <div id="reports_container">
+            <!-- Reports will be added here dynamically -->
+        </div>
+
+        <!-- Submit All Button -->
+        <div class="d-flex justify-content-end gap-2 mb-4" id="submit_section" style="display: none;">
+            <button type="button" class="btn btn-outline-danger" id="clear_all_btn">
+                <i class="fas fa-trash me-2"></i>Clear All
+            </button>
+            <button type="button" class="btn btn-primary btn-lg" id="submit_all_btn">
+                <i class="fas fa-paper-plane me-2"></i>Submit All Reports
+            </button>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card sticky-top">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Batch Reports Guide
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Click "Add Report" to create a new report form
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Fill each report for different shops
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        You can remove individual reports if needed
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        All reports will use the same date/time
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Submit all reports at once when ready
+                    </li>
+                    <li>
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        Make sure each report has a different shop
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Template (Hidden) -->
+<div id="report_template" style="display: none;">
+    <div class="card mb-4 report-card">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white;">
+            <h5 class="mb-0" style="color: white !important;">
+                <i class="fas fa-file-alt me-2"></i>Report <span class="report-number">1</span>
+            </h5>
+            <button type="button" class="btn btn-outline-light btn-sm remove-report-btn">
+                <i class="fas fa-times me-1"></i>Remove
+            </button>
+        </div>
+        <div class="card-body">
+            <!-- Basic Information -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Basic Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Shop *</label>
+                            <div class="position-relative">
+                                <input type="text" class="form-control branch-search" 
+                                       placeholder="Type to search for shop..." autocomplete="off">
+                                <input type="hidden" class="branch-id" name="branch_id" required>
+                            </div>
+                            <!-- Dropdown will be moved to body when shown -->
+                            <div class="branch-suggestions" style="display: none;"></div>
+                            <div class="form-text selected-branch-info" style="display: none;">
+                                <small class="text-muted">Selected: <span class="branch-display"></span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Movement -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Sales Movement
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="fas fa-shopping-cart me-2"></i>Samsung & Competitors (LG, Araby, Others)
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Samsung</label>
+                            <textarea class="form-control" name="samsung_sales" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Competitors</label>
+                            <textarea class="form-control" name="competitors_sales" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Samsung Product Availability -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tv me-2"></i>Samsung Product Availability
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-box me-2"></i>Ditributor, Key Model, Flag
+                            </h6>
+                            <label class="form-label">TV</label>
+                            <textarea class="form-control" name="tv_availability" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-box me-2"></i>Ditributor, Key Model, Flag
+                            </h6>
+                            <label class="form-label">HA (Home Appliances)</label>
+                            <textarea class="form-control" name="ha_availability" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Store Activities -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-store me-2"></i>Store Activities
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="fas fa-handshake me-2"></i>Samsung & Competitors
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">SFO, PMT</label>
+                            <textarea class="form-control" name="sfo_pmt" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Display</label>
+                            <textarea class="form-control" name="display_activities" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Store Issue (SDA, DOA)</label>
+                            <textarea class="form-control" name="store_issues" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VOD -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-video me-2"></i>VOD
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- Store & Dealer's Situation Subsection -->
+                    <div class="mb-3">
+                        <h6 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Store & Dealer's Situation
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Complaints</label>
+                                <textarea class="form-control" name="complaints" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Issues</label>
+                                <textarea class="form-control" name="issues" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Requirements</label>
+                                <textarea class="form-control" name="requirements" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result & Action -->
+            <div class="card mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Result & Action
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- What I did? Subsection -->
+                    <div class="mb-3">
+                        <h6 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-check-circle me-2"></i>What I did?
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Store</label>
+                                <textarea class="form-control" name="actions_taken" rows="4"></textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Member</label>
+                                <textarea class="form-control" name="store_member_notes" rows="4"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let reportCounter = 0;
+    const reportsContainer = document.getElementById('reports_container');
+    const addReportBtn = document.getElementById('add_report_btn');
+    const submitSection = document.getElementById('submit_section');
+    const reportsCountBadge = document.getElementById('reports_count');
+    const submitAllBtn = document.getElementById('submit_all_btn');
+    const clearAllBtn = document.getElementById('clear_all_btn');
+    
+    // Set current date and time
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('batch_date').value = localDateTime;
+    
+    // Add first report automatically
+    addReport();
+    
+    // Add report button
+    addReportBtn.addEventListener('click', addReport);
+    
+    // Clear all button
+    clearAllBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear all reports?')) {
+            reportsContainer.innerHTML = '';
+            reportCounter = 0;
+            updateReportsCount();
+            addReport(); // Add one report back
+        }
+    });
+    
+    // Submit all button
+    submitAllBtn.addEventListener('click', submitAllReports);
+    
+    function addReport() {
+        reportCounter++;
+        
+        // Clone template
+        const template = document.getElementById('report_template');
+        const reportCard = template.cloneNode(true);
+        reportCard.id = `report_${reportCounter}`;
+        reportCard.style.display = 'block';
+        
+        // Update report number
+        reportCard.querySelector('.report-number').textContent = reportCounter;
+        
+        // Add remove functionality
+        const removeBtn = reportCard.querySelector('.remove-report-btn');
+        removeBtn.addEventListener('click', function() {
+            removeReport(reportCard);
+        });
+        
+        // Initialize branch search for this report
+        initializeBranchSearch(reportCard);
+        
+        // Add to container
+        reportsContainer.appendChild(reportCard);
+        
+        updateReportsCount();
+        
+        // Scroll to new report
+        reportCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    function removeReport(reportCard) {
+        if (reportsContainer.children.length <= 1) {
+            alert('You must have at least one report.');
+            return;
+        }
+        
+        const reportNumber = reportCard.querySelector('.report-number').textContent;
+        if (confirm(`Are you sure you want to remove Report ${reportNumber}?`)) {
+            reportCard.style.animation = 'slideOutToRight 0.3s ease-out';
+            setTimeout(() => {
+                reportCard.remove();
+                updateReportsCount();
+                renumberReports();
+            }, 300);
+        }
+    }
+    
+    function updateReportsCount() {
+        const count = reportsContainer.children.length;
+        reportsCountBadge.textContent = `${count} Report${count !== 1 ? 's' : ''}`;
+        
+        if (count > 0) {
+            submitSection.style.display = 'flex';
+        } else {
+            submitSection.style.display = 'none';
+        }
+    }
+    
+    function renumberReports() {
+        const reports = reportsContainer.children;
+        for (let i = 0; i < reports.length; i++) {
+            reports[i].querySelector('.report-number').textContent = i + 1;
+        }
+    }
+    
+    function initializeBranchSearch(reportCard) {
+        const branchSearch = reportCard.querySelector('.branch-search');
+        const branchSuggestions = reportCard.querySelector('.branch-suggestions');
+        const branchIdInput = reportCard.querySelector('.branch-id');
+        const selectedBranchInfo = reportCard.querySelector('.selected-branch-info');
+        const branchDisplay = reportCard.querySelector('.branch-display');
+        
+        let searchTimeout;
+        let selectedBranch = null;
+        
+        // Function to position dropdown in top layer
+        function positionDropdown() {
+            const rect = branchSearch.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+            
+            branchSuggestions.style.left = (rect.left + scrollLeft) + 'px';
+            branchSuggestions.style.top = (rect.bottom + scrollTop + 2) + 'px';
+            branchSuggestions.style.width = rect.width + 'px';
+        }
+        
+        // Function to show dropdown in top layer
+        function showDropdown() {
+            // Append to body if not already there
+            if (branchSuggestions.parentNode !== document.body) {
+                document.body.appendChild(branchSuggestions);
+            }
+            
+            positionDropdown();
+            branchSuggestions.classList.add('show');
+            branchSuggestions.style.display = 'block';
+            branchSuggestions.style.visibility = 'visible';
+        }
+        
+        // Function to hide dropdown with proper cleanup
+        function hideDropdown() {
+            branchSuggestions.classList.remove('show');
+            branchSuggestions.style.display = 'none';
+            branchSuggestions.style.visibility = 'hidden';
+        }
+        
+        // Enhanced branch search with better UX
+        branchSearch.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            clearTimeout(searchTimeout);
+            
+            // Clear selection if user is typing
+            if (selectedBranch && this.value !== selectedBranch.name) {
+                branchIdInput.value = '';
+                selectedBranchInfo.style.display = 'none';
+                selectedBranch = null;
+                branchSearch.classList.remove('is-valid');
+            }
+            
+            if (query.length < 1) {
+                hideDropdown();
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                fetch(`{{ url_for('employee.search_branches') }}?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        branchSuggestions.innerHTML = '';
+                        
+                        if (data.length > 0) {
+                            // Remove duplicates based on branch ID
+                            const uniqueBranches = data.filter((branch, index, self) => 
+                                index === self.findIndex(b => b.id === branch.id)
+                            );
+                            
+                            uniqueBranches.forEach((branch, index) => {
+                                const item = document.createElement('a');
+                                item.className = 'dropdown-item';
+                                item.href = '#';
+                                item.innerHTML = `
+                                    <div>
+                                        <div class="fw-bold">${branch.name}</div>
+                                        <small class="text-muted">${branch.code} • ${branch.region}</small>
+                                    </div>
+                                `;
+                                
+                                item.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    clearTimeout(hideTimeout);
+                                    selectBranch(branch);
+                                });
+                                
+                                // Add hover effects for keyboard navigation
+                                item.addEventListener('mouseenter', function() {
+                                    // Remove active class from other items
+                                    branchSuggestions.querySelectorAll('.dropdown-item').forEach(i => i.classList.remove('active'));
+                                    this.classList.add('active');
+                                });
+                                
+                                branchSuggestions.appendChild(item);
+                            });
+                            
+                            // Show dropdown in top layer
+                            showDropdown();
+                        } else {
+                            branchSuggestions.innerHTML = '<div class="dropdown-item-text text-muted">No shops found</div>';
+                            // Show dropdown in top layer
+                            showDropdown();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error searching branches:', error);
+                        branchSuggestions.innerHTML = '<div class="dropdown-item-text text-danger">Error loading shops</div>';
+                        showDropdown();
+                    });
+            }, 300);
+        });
+        
+        // Function to select a branch
+        function selectBranch(branch) {
+            selectedBranch = branch;
+            branchSearch.value = branch.name;
+            branchIdInput.value = branch.id;
+            branchDisplay.textContent = `${branch.name} (${branch.code}) - ${branch.region}`;
+            selectedBranchInfo.style.display = 'block';
+            hideDropdown();
+            
+            // Remove any validation errors and add success styling
+            branchSearch.classList.remove('is-invalid');
+            branchSearch.classList.add('is-valid');
+            
+            // Clear any pending hide timeouts
+            clearTimeout(hideTimeout);
+            
+            // Add a subtle success animation
+            selectedBranchInfo.style.animation = 'slideInFromTop 0.3s ease-out';
+        }
+        
+        // Hide suggestions when clicking outside (with delay for better UX)
+        let hideTimeout;
+        
+        document.addEventListener('click', function(e) {
+            // Check if click is outside both the input and dropdown
+            if (!branchSearch.contains(e.target) && !branchSuggestions.contains(e.target)) {
+                // Add a small delay to allow for click events on dropdown items
+                hideTimeout = setTimeout(() => {
+                    hideDropdown();
+                }, 150);
+            }
+        });
+        
+        // Cancel hide timeout when interacting with dropdown
+        branchSuggestions.addEventListener('mouseenter', function() {
+            clearTimeout(hideTimeout);
+        });
+        
+        branchSuggestions.addEventListener('mouseleave', function() {
+            // Keep dropdown visible - don't auto-hide on mouse leave
+            clearTimeout(hideTimeout);
+        });
+        
+        // Prevent dropdown from closing when clicking inside it
+        branchSuggestions.addEventListener('mousedown', function(e) {
+            clearTimeout(hideTimeout);
+        });
+        
+        // Enhanced keyboard navigation for dropdown
+        branchSearch.addEventListener('keydown', function(e) {
+            const items = branchSuggestions.querySelectorAll('.dropdown-item:not(.dropdown-item-text)');
+            const activeItem = branchSuggestions.querySelector('.dropdown-item.active');
+            let activeIndex = activeItem ? Array.from(items).indexOf(activeItem) : -1;
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (branchSuggestions.style.display === 'none') {
+                    showDropdown();
+                }
+                if (activeItem) activeItem.classList.remove('active');
+                activeIndex = (activeIndex + 1) % items.length;
+                if (items[activeIndex]) {
+                    items[activeIndex].classList.add('active');
+                    items[activeIndex].scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (branchSuggestions.style.display === 'none') {
+                    showDropdown();
+                }
+                if (activeItem) activeItem.classList.remove('active');
+                activeIndex = activeIndex <= 0 ? items.length - 1 : activeIndex - 1;
+                if (items[activeIndex]) {
+                    items[activeIndex].classList.add('active');
+                    items[activeIndex].scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'Enter' && activeItem) {
+                e.preventDefault();
+                activeItem.click();
+            } else if (e.key === 'Escape') {
+                hideDropdown();
+                branchSearch.blur();
+            } else if (e.key === 'Tab') {
+                // Allow tab to close dropdown and move to next field
+                hideDropdown();
+            }
+        });
+        
+        // Show dropdown when input is focused and has content
+        branchSearch.addEventListener('focus', function() {
+            if (this.value.trim().length > 0 && branchSuggestions.children.length > 0) {
+                showDropdown();
+            }
+        });
+        
+        // Reposition dropdown on window resize or scroll
+        window.addEventListener('resize', function() {
+            if (branchSuggestions.style.display === 'block') {
+                positionDropdown();
+            }
+        });
+        
+        window.addEventListener('scroll', function() {
+            if (branchSuggestions.style.display === 'block') {
+                positionDropdown();
+            }
+        });
+    }
+    
+    function submitAllReports() {
+        const reports = reportsContainer.children;
+        const reportsData = [];
+        const selectedBranches = new Set();
+        
+        // Validate and collect data
+        for (let i = 0; i < reports.length; i++) {
+            const report = reports[i];
+            const branchId = report.querySelector('.branch-id').value;
+            
+            if (!branchId) {
+                alert(`Please select a shop for Report ${i + 1}.`);
+                report.querySelector('.branch-search').focus();
+                return;
+            }
+            
+            if (selectedBranches.has(branchId)) {
+                alert(`You have selected the same shop for multiple reports. Each report must be for a different shop.`);
+                return;
+            }
+            
+            selectedBranches.add(branchId);
+            
+            // Collect form data
+            const reportData = {
+                branch_id: branchId,
+                samsung_sales: report.querySelector('[name="samsung_sales"]').value,
+                competitors_sales: report.querySelector('[name="competitors_sales"]').value,
+                tv_availability: report.querySelector('[name="tv_availability"]').value,
+                ha_availability: report.querySelector('[name="ha_availability"]').value,
+                sfo_pmt: report.querySelector('[name="sfo_pmt"]').value,
+                display_activities: report.querySelector('[name="display_activities"]').value,
+                store_issues: report.querySelector('[name="store_issues"]').value,
+                complaints: report.querySelector('[name="complaints"]').value,
+                issues: report.querySelector('[name="issues"]').value,
+                requirements: report.querySelector('[name="requirements"]').value,
+                actions_taken: report.querySelector('[name="actions_taken"]').value,
+                store_member_notes: report.querySelector('[name="store_member_notes"]').value
+            };
+            
+            reportsData.push(reportData);
+        }
+        
+        // Show loading state
+        submitAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting Reports...';
+        submitAllBtn.disabled = true;
+        
+        // Submit all reports
+        fetch('{{ url_for("employee.submit_batch_reports") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                reports: reportsData,
+                report_date: document.getElementById('batch_date').value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Successfully submitted ${data.count} reports!`);
+                window.location.href = '{{ url_for("employee.dashboard") }}';
+            } else {
+                alert(`Error: ${data.message}`);
+                submitAllBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Submit All Reports';
+                submitAllBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error submitting reports. Please try again.');
+            submitAllBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Submit All Reports';
+            submitAllBtn.disabled = false;
+        });
+    }
+});
+</script>
+
+<style>
+.report-card {
+    border-left: 4px solid #007bff;
+    transition: all 0.3s ease;
+}
+
+.report-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.branch-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    background-color: white;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    display: none;
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    color: #212529;
+    display: block;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #16181b;
+    text-decoration: none;
+}
+
+.dropdown-item-text {
+    padding: 0.5rem 1rem;
+    color: #6c757d;
+}
+
+#reports_count {
+    font-size: 1rem !important;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%) !important;
+    color: #212529 !important;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.card-header h5,
+.card-header h6 {
+    color: #212529 !important;
+    margin-bottom: 0;
+}
+
+.bg-warning.text-dark {
+    background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%) !important;
+    color: #212529 !important;
+}
+
+.remove-report-btn:hover {
+    transform: scale(1.05);
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+@keyframes slideInFromTop {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOutToRight {
+    0% {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .report-card .row .col-md-6,
+    .report-card .row .col-md-4 {
+        margin-bottom: 1rem;
+    }
+    
+    .card-header .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .remove-report-btn {
+        margin-top: 0.5rem;
+        align-self: flex-end;
+    }
+}
+</style>
+{% endblock %}
