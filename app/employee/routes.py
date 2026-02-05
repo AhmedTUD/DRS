@@ -202,11 +202,8 @@ def create_report():
                 display_activities=display_activities,
                 store_issues=store_issues,
                 vod_notes=vod_notes,
-                complaints=complaints_issues_requirements,
-                issues='',  # Now combined into complaints field
-                requirements='',  # Now combined into complaints field
-                actions_taken=store_member_combined,
-                store_member_notes=''  # Now combined into actions_taken field
+                complaints=complaints_issues_requirements,  # Combined field
+                actions_taken=store_member_combined  # Combined field
             )
             
             print(f"💾 Saving report for branch: {branch.name}")
@@ -307,11 +304,9 @@ def submit_batch_reports():
                 sfo_pmt=report_data.get('sfo_pmt', ''),
                 display_activities=report_data.get('display_activities', ''),
                 store_issues=report_data.get('store_issues', ''),
-                complaints=report_data.get('complaints_issues_requirements', ''),
-                issues='',  # Now combined into complaints field
-                requirements='',  # Now combined into complaints field
-                actions_taken=report_data.get('store_member_combined', ''),
-                store_member_notes=''  # Now combined into actions_taken field
+                vod_notes=report_data.get('vod_notes', ''),
+                complaints=report_data.get('complaints_issues_requirements', ''),  # Combined field
+                actions_taken=report_data.get('store_member_combined', '')  # Combined field
             )
             
             db.session.add(report)
