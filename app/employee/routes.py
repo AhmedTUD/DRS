@@ -1,8 +1,8 @@
-from flask import render_template, request, redirect, url_for, session, flash, jsonify
+from flask import render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from app.employee import bp
 from app.models import User, Area, Store, Report, Region, Branch, db
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, date
 import pytz
 from zoneinfo import ZoneInfo
 
@@ -75,6 +75,8 @@ def login_required(f):
 @login_required
 def dashboard():
     user = User.query.get(session['user_id'])
+    print(f"🏠 Dashboard accessed by user: {user.employee_name} (ID: {user.id})")
+    
     # Get recent reports ordered by creation date (most recent first)
     recent_reports_raw = Report.query.filter_by(user_id=user.id).order_by(Report.created_at.desc()).limit(5).all()
     
@@ -91,6 +93,19 @@ def dashboard():
             'original_report': report  # Keep reference to original report if needed
         }
         recent_reports.append(report_data)
+    
+    # Check if user has vacation today for debugging
+    from app.models import Vacation
+    today = date.today()
+    today_vacation = Vacation.query.filter_by(
+        user_id=user.id,
+        vacation_date=today
+    ).first()
+    
+    print(f"📅 Today's date: {today}")
+    print(f"🏖️ User has vacation today: {today_vacation is not None}")
+    if today_vacation:
+        print(f"   Vacation ID: {today_vacation.id}, Date: {today_vacation.vacation_date}")
     
     return render_template('employee/dashboard.html', user=user, recent_reports=recent_reports)
 
@@ -168,14 +183,11 @@ def create_report():
             # VOD
             vod_notes = request.form.get('vod_notes', '')
             
-            # Store & Dealer's Situation
-            complaints = request.form.get('complaints', '')
-            issues = request.form.get('issues', '')
-            requirements = request.form.get('requirements', '')
+            # Store & Dealer's Situation (combined field)
+            complaints_issues_requirements = request.form.get('complaints_issues_requirements', '')
             
-            # Result & Action
-            actions_taken = request.form.get('actions_taken', '')
-            store_member_notes = request.form.get('store_member_notes', '')
+            # Result & Action (combined field)
+            store_member_combined = request.form.get('store_member_combined', '')
             
             # Create report
             report = Report(
@@ -190,11 +202,11 @@ def create_report():
                 display_activities=display_activities,
                 store_issues=store_issues,
                 vod_notes=vod_notes,
-                complaints=complaints,
-                issues=issues,
-                requirements=requirements,
-                actions_taken=actions_taken,
-                store_member_notes=store_member_notes
+                complaints=complaints_issues_requirements,
+                issues='',  # Now combined into complaints field
+                requirements='',  # Now combined into complaints field
+                actions_taken=store_member_combined,
+                store_member_notes=''  # Now combined into actions_taken field
             )
             
             print(f"💾 Saving report for branch: {branch.name}")
@@ -295,11 +307,11 @@ def submit_batch_reports():
                 sfo_pmt=report_data.get('sfo_pmt', ''),
                 display_activities=report_data.get('display_activities', ''),
                 store_issues=report_data.get('store_issues', ''),
-                complaints=report_data.get('complaints', ''),
-                issues=report_data.get('issues', ''),
-                requirements=report_data.get('requirements', ''),
-                actions_taken=report_data.get('actions_taken', ''),
-                store_member_notes=report_data.get('store_member_notes', '')
+                complaints=report_data.get('complaints_issues_requirements', ''),
+                issues='',  # Now combined into complaints field
+                requirements='',  # Now combined into complaints field
+                actions_taken=report_data.get('store_member_combined', ''),
+                store_member_notes=''  # Now combined into actions_taken field
             )
             
             db.session.add(report)
@@ -319,6 +331,112 @@ def submit_batch_reports():
         print(f"❌ Error in batch submission: {str(e)}")
         db.session.rollback()
         return jsonify({'success': False, 'message': f'Error submitting reports: {str(e)}'})
+
+@bp.route('/mark-vacation', methods=['POST'])
+@login_required
+def mark_vacation():
+    """تسجيل إجازة للموظف"""
+    user = User.query.get(session['user_id'])
+    
+    try:
+        data = request.get_json()
+        if not data:
+            print("❌ No JSON data received")
+            return jsonify({'success': False, 'message': 'No data received'}), 400
+            
+        vacation_date_str = data.get('vacation_date')
+        
+        print(f"📝 Vacation request from {user.employee_name} (ID: {user.id}) for date: {vacation_date_str}")
+        
+        if not vacation_date_str:
+            print("❌ No vacation date provided")
+            return jsonify({'success': False, 'message': 'Vacation date is required'}), 400
+        
+        # Parse vacation date
+        try:
+            vacation_date = datetime.strptime(vacation_date_str, '%Y-%m-%d').date()
+            print(f"📅 Parsed vacation date: {vacation_date}")
+        except ValueError as e:
+            print(f"❌ Invalid date format: {e}")
+            return jsonify({'success': False, 'message': 'Invalid date format'}), 400
+        
+        # Check if vacation already exists
+        from app.models import Vacation
+        existing_vacation = Vacation.query.filter_by(
+            user_id=user.id,
+            vacation_date=vacation_date
+        ).first()
+        
+        if existing_vacation:
+            print(f"⚠️ Vacation already exists for {user.employee_name} on {vacation_date}")
+            return jsonify({'success': False, 'message': 'Vacation already marked for this date'}), 409
+        
+        # Create new vacation record
+        vacation = Vacation(
+            user_id=user.id,
+            vacation_date=vacation_date
+        )
+        
+        db.session.add(vacation)
+        db.session.commit()
+        
+        print(f"✅ Vacation marked successfully for {user.employee_name} on {vacation_date}")
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Vacation marked successfully for {vacation_date}'
+        })
+        
+    except Exception as e:
+        print(f"❌ Error marking vacation: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Error marking vacation: {str(e)}'}), 500
+
+@bp.route('/check-vacation', methods=['GET'])
+@login_required
+def check_vacation():
+    """التحقق من وجود إجازة في تاريخ معين"""
+    user = User.query.get(session['user_id'])
+    
+    try:
+        date_str = request.args.get('date')
+        print(f"🔍 Checking vacation for {user.employee_name} (ID: {user.id}) on date: {date_str}")
+        
+        if not date_str:
+            print("❌ No date parameter provided")
+            return jsonify({'success': False, 'message': 'Date parameter is required'}), 400
+        
+        # Parse date
+        try:
+            check_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            print(f"📅 Parsed check date: {check_date}")
+        except ValueError as e:
+            print(f"❌ Invalid date format: {e}")
+            return jsonify({'success': False, 'message': 'Invalid date format'}), 400
+        
+        # Check if vacation exists
+        from app.models import Vacation
+        vacation = Vacation.query.filter_by(
+            user_id=user.id,
+            vacation_date=check_date
+        ).first()
+        
+        has_vacation = vacation is not None
+        print(f"📊 Vacation check result: {has_vacation} (vacation record: {vacation.id if vacation else 'None'})")
+        
+        return jsonify({
+            'success': True,
+            'has_vacation': has_vacation,
+            'vacation_date': date_str
+        })
+        
+    except Exception as e:
+        print(f"❌ Error checking vacation: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error checking vacation: {str(e)}'}), 500
 
 @bp.route('/test-report')
 @login_required
@@ -690,6 +808,49 @@ def api_get_report_comments(report_id):
         
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@bp.route('/test-vacation-frontend')
+@login_required
+def test_vacation_frontend():
+    """Test page for vacation system frontend"""
+    user = User.query.get(session['user_id'])
+    return render_template('employee/test_vacation.html', user=user)
+
+@bp.route('/test-vacation-system')
+@login_required
+def test_vacation_system():
+    """Test endpoint for vacation system debugging"""
+    user = User.query.get(session['user_id'])
+    
+    from app.models import Vacation
+    today = date.today()
+    
+    # Get today's vacation
+    today_vacation = Vacation.query.filter_by(
+        user_id=user.id,
+        vacation_date=today
+    ).first()
+    
+    # Get all user's vacations
+    all_vacations = Vacation.query.filter_by(user_id=user.id).all()
+    
+    test_results = {
+        'user_id': user.id,
+        'user_name': user.employee_name,
+        'today_date': str(today),
+        'has_vacation_today': today_vacation is not None,
+        'today_vacation_id': today_vacation.id if today_vacation else None,
+        'total_vacations': len(all_vacations),
+        'all_vacations': [
+            {
+                'id': v.id,
+                'date': str(v.vacation_date),
+                'created_at': str(v.created_at)
+            } for v in all_vacations
+        ]
+    }
+    
+    return jsonify(test_results)
 
 @bp.route('/notifications')
 @login_required
