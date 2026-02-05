@@ -553,6 +553,12 @@ def api_delete_user(user_id):
         for region in user_regions:
             db.session.delete(region)
         
+        # Delete user's vacations (to avoid NOT NULL constraint error)
+        from app.models import Vacation
+        user_vacations = Vacation.query.filter_by(user_id=user.id).all()
+        for vacation in user_vacations:
+            db.session.delete(vacation)
+        
         # Delete user's notifications (to avoid NOT NULL constraint error)
         user_notifications = Notification.query.filter_by(user_id=user.id).all()
         for notification in user_notifications:
@@ -587,6 +593,7 @@ def api_delete_user(user_id):
             'message': f'User {action_taken} successfully',
             'regions_deleted': len(user_regions),
             'branches_deleted': len(user_branches),
+            'vacations_deleted': len(user_vacations),
             'reports_deleted': reports_count if force_delete else 0
         })
         
@@ -660,6 +667,77 @@ def api_delete_report(report_id):
         })
         
     except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@bp.route('/api/reports/delete-all', methods=['DELETE'])
+@admin_required
+def api_delete_all_reports():
+    """Delete all reports (with optional filters)"""
+    try:
+        # Get filter parameters (same as in api_reports)
+        employee_name = request.args.get('employee_name', '')
+        employee_code = request.args.get('employee_code', '')
+        store_name = request.args.get('store_name', '')
+        start_date = request.args.get('start_date', '')
+        end_date = request.args.get('end_date', '')
+        
+        print(f"🗑️ Delete all reports request received")
+        print(f"   Filters: employee_name={employee_name}, employee_code={employee_code}, store_name={store_name}")
+        print(f"   Date range: {start_date} to {end_date}")
+        
+        # Build query with same filters as api_reports
+        query = db.session.query(Report).join(User).join(Store).join(Area)
+        
+        if employee_name:
+            query = query.filter(User.employee_name.contains(employee_name))
+        if employee_code:
+            query = query.filter(User.employee_code.contains(employee_code))
+        if store_name:
+            query = query.filter(Store.name.contains(store_name))
+        
+        # Date filtering
+        if start_date:
+            start_datetime = parse_date_filter(start_date, is_end_date=False)
+            if start_datetime:
+                query = query.filter(Report.report_date >= start_datetime)
+        
+        if end_date:
+            end_datetime = parse_date_filter(end_date, is_end_date=True)
+            if end_datetime:
+                query = query.filter(Report.report_date <= end_datetime)
+        
+        # Get all matching reports
+        reports_to_delete = query.all()
+        deleted_count = len(reports_to_delete)
+        
+        print(f"   Found {deleted_count} reports to delete")
+        
+        if deleted_count == 0:
+            return jsonify({
+                'success': False,
+                'message': 'No reports found matching the criteria',
+                'deleted_count': 0
+            }), 404
+        
+        # Delete all matching reports
+        for report in reports_to_delete:
+            db.session.delete(report)
+        
+        db.session.commit()
+        
+        print(f"✅ Successfully deleted {deleted_count} reports")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully deleted {deleted_count} report(s)',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        print(f"❌ Error deleting all reports: {str(e)}")
+        import traceback
+        traceback.print_exc()
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -1032,12 +1110,23 @@ def export_reports():
     filename = f'Report_{current_egypt_time.strftime("%Y%m%d_%H%M%S")}.xlsx'
     
     if not reports:
-        # Return empty file if no reports
+        # Even if no reports, create summary sheet to show vacation status
         output = io.BytesIO()
         wb = Workbook()
-        ws = wb.active
-        ws.title = "No Reports"
-        ws.cell(row=1, column=1, value="No reports found for the selected criteria")
+        
+        # Remove default sheet
+        wb.remove(wb.active)
+        
+        # Create summary sheet with empty reports data
+        summary_ws = wb.create_sheet(title="Reports Summary")
+        _create_summary_sheet(summary_ws, {}, start_date, end_date)  # Empty spvr_reports dict
+        
+        # Create a "No Reports" sheet for information
+        no_reports_ws = wb.create_sheet(title="No Reports Found")
+        no_reports_ws.cell(row=1, column=1, value="No reports found for the selected criteria")
+        no_reports_ws.cell(row=2, column=1, value=f"Date range: {start_date or 'All'} to {end_date or 'All'}")
+        no_reports_ws.cell(row=3, column=1, value="Check the 'Reports Summary' sheet for employee vacation status")
+        
         wb.save(output)
         output.seek(0)
         return send_file(
@@ -1097,16 +1186,19 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
     """Create summary sheet with employee statistics and missing employees in red"""
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
-    from app.models import User, Store, Branch
+    from app.models import User, Store, Branch, Vacation
+    from datetime import datetime, date
     
     # Define colors and styles
     header_color = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')  # Blue header
     summary_color = PatternFill(start_color='E2EFDA', end_color='E2EFDA', fill_type='solid')  # Light green for active employees
     missing_color = PatternFill(start_color='FFE6E6', end_color='FFE6E6', fill_type='solid')  # Light red for missing employees
+    vacation_color = PatternFill(start_color='FFF2CC', end_color='FFF2CC', fill_type='solid')  # Light yellow for vacation
     
     header_font = Font(name='Calibri', size=12, bold=True, color='FFFFFF')
     data_font = Font(name='Calibri', size=10, bold=False, color='000000')
     missing_font = Font(name='Calibri', size=10, bold=True, color='CC0000')  # Red bold for missing
+    vacation_font = Font(name='Calibri', size=10, bold=True, color='FF8C00')  # Orange bold for vacation
     
     center_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
     left_alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
@@ -1138,6 +1230,28 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
     # Get all employees (non-admin users)
     all_employees = User.query.filter_by(is_admin=False).all()
     
+    # Parse date range for vacation checking
+    vacation_start_date = None
+    vacation_end_date = None
+    
+    if start_date:
+        try:
+            vacation_start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        except:
+            vacation_start_date = date.today()
+    else:
+        vacation_start_date = date.today()
+        
+    if end_date:
+        try:
+            vacation_end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except:
+            vacation_end_date = date.today()
+    else:
+        vacation_end_date = date.today()
+    
+    print(f"🏖️ Checking vacations from {vacation_start_date} to {vacation_end_date}")
+    
     # Create employee statistics
     employee_stats = {}
     
@@ -1160,7 +1274,8 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
             'stores_count': len(unique_stores),
             'reports_count': len(reports),
             'last_report': last_report_date,
-            'has_reports': True
+            'has_reports': True,
+            'has_vacation': False
         }
     
     # Add employees who didn't submit reports
@@ -1172,8 +1287,27 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
                 'stores_count': 0,
                 'reports_count': 0,
                 'last_report': None,
-                'has_reports': False
+                'has_reports': False,
+                'has_vacation': False
             }
+    
+    # Now check vacations for ALL employees (both with and without reports)
+    for employee in all_employees:
+        if employee.employee_code in employee_stats:
+            # Check if employee has vacation in the date range
+            vacation = Vacation.query.filter(
+                Vacation.user_id == employee.id,
+                Vacation.vacation_date >= vacation_start_date,
+                Vacation.vacation_date <= vacation_end_date
+            ).first()
+            
+            has_vacation = vacation is not None
+            employee_stats[employee.employee_code]['has_vacation'] = has_vacation
+            
+            if has_vacation:
+                print(f"🏖️ Found vacation for {employee.employee_name} ({employee.employee_code}) on {vacation.vacation_date}")
+            else:
+                print(f"💼 No vacation found for {employee.employee_name} ({employee.employee_code})")
     
     # Sort employees by name
     sorted_employees = sorted(employee_stats.values(), key=lambda x: x['name'])
@@ -1217,7 +1351,11 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
         
         # Status
         cell = ws.cell(row=row_idx, column=6)
-        if emp['has_reports']:
+        if emp['has_vacation']:
+            cell.value = 'On Vacation'
+            cell.fill = vacation_color
+            cell.font = vacation_font
+        elif emp['has_reports']:
             cell.value = 'Active'
             cell.fill = summary_color
             cell.font = data_font
@@ -1231,12 +1369,16 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
         # Apply row formatting
         for col in range(1, 7):
             row_cell = ws.cell(row=row_idx, column=col)
-            if not emp['has_reports']:
-                row_cell.fill = missing_color
-                if col != 6:  # Don't override status cell font
+            if emp['has_vacation']:
+                if col != 6:  # Don't override status cell
+                    row_cell.fill = vacation_color
+                    row_cell.font = vacation_font
+            elif not emp['has_reports']:
+                if col != 6:  # Don't override status cell
+                    row_cell.fill = missing_color
                     row_cell.font = missing_font
             else:
-                if col != 6:  # Don't override status cell fill
+                if col != 6:  # Don't override status cell
                     row_cell.font = data_font
         
         row_idx += 1
@@ -1251,7 +1393,8 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
     
     total_employees = len(sorted_employees)
     active_employees = sum(1 for emp in sorted_employees if emp['has_reports'])
-    missing_employees = total_employees - active_employees
+    vacation_employees = sum(1 for emp in sorted_employees if emp['has_vacation'])
+    missing_employees = total_employees - active_employees - vacation_employees
     total_reports = sum(emp['reports_count'] for emp in sorted_employees)
     total_stores = sum(emp['stores_count'] for emp in sorted_employees)
     
@@ -1266,6 +1409,7 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
     summary_data = [
         ('Total Employees:', total_employees),
         ('Active Employees:', active_employees),
+        ('On Vacation:', vacation_employees),
         ('Missing Employees:', missing_employees),
         ('Total Reports:', total_reports),
         ('Total Stores Reported:', total_stores)
@@ -1282,8 +1426,10 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
         value_cell.font = data_font
         value_cell.alignment = center_alignment
         
-        # Highlight missing employees count in red
-        if label == 'Missing Employees:' and value > 0:
+        # Highlight different categories
+        if label == 'On Vacation:' and value > 0:
+            value_cell.font = Font(name='Calibri', size=10, bold=True, color='FF8C00')
+        elif label == 'Missing Employees:' and value > 0:
             value_cell.font = Font(name='Calibri', size=10, bold=True, color='CC0000')
     
     # Freeze panes
@@ -1406,14 +1552,11 @@ def _format_excel_sheet_enhanced(ws, reports, spvr_name, spvr_code):
         # Store Activities
         {'header': 'SFO, PMT', 'width': 25},
         {'header': 'Display', 'width': 25},
-        {'header': 'Store Issue (SDA, DOA)', 'width': 25},
+        {'header': 'Store Issue', 'width': 25},
         
         # VOD & Result & Action
-        {'header': 'Complaints', 'width': 30},
-        {'header': 'Issues', 'width': 30},
-        {'header': 'Requirements', 'width': 30},
-        {'header': 'Store', 'width': 30},
-        {'header': 'Member', 'width': 30}
+        {'header': 'Complaints, Issues, Requirements', 'width': 40},
+        {'header': 'Store, Member', 'width': 40}
     ]
     
     # Define the exact structure as specified
@@ -1423,8 +1566,8 @@ def _format_excel_sheet_enhanced(ws, reports, spvr_name, spvr_code):
         {'name': 'Sales Movement', 'start': 8, 'end': 9, 'color': sales_color},
         {'name': 'Samsung Product Availability', 'start': 10, 'end': 11, 'color': product_color},
         {'name': 'Store Activities', 'start': 12, 'end': 14, 'color': activities_color},
-        {'name': 'VOD', 'start': 15, 'end': 17, 'color': vod_result_color},
-        {'name': 'Result & Action', 'start': 18, 'end': 19, 'color': vod_result_color}
+        {'name': 'VOD', 'start': 15, 'end': 15, 'color': vod_result_color},
+        {'name': 'Result & Action', 'start': 16, 'end': 16, 'color': vod_result_color}
     ]
     
     # Row 2: Sub Headers
@@ -1435,8 +1578,8 @@ def _format_excel_sheet_enhanced(ws, reports, spvr_name, spvr_code):
         {'name': 'Ditributor, Key Model, Flag', 'start': 10, 'end': 10, 'color': product_color},
         {'name': 'Ditributor, Key Model, Flag', 'start': 11, 'end': 11, 'color': product_color},
         {'name': 'Samsung & Competitors', 'start': 12, 'end': 14, 'color': activities_color},
-        {'name': 'Store & Dealer\'s Situation', 'start': 15, 'end': 17, 'color': bright_yellow},
-        {'name': 'What I did ?', 'start': 18, 'end': 19, 'color': bright_yellow}
+        {'name': 'Store & Dealer\'s Situation', 'start': 15, 'end': 15, 'color': bright_yellow},
+        {'name': 'What I did ?', 'start': 16, 'end': 16, 'color': bright_yellow}
     ]
     
     # Write and format main headers (Row 1)
@@ -1489,8 +1632,8 @@ def _format_excel_sheet_enhanced(ws, reports, spvr_name, spvr_code):
         sales_color, sales_color,  # Sales Movement
         product_color, product_color,  # Samsung Product Availability
         activities_color, activities_color, activities_color,  # Store Activities (removed Sales)
-        bright_yellow, bright_yellow, bright_yellow,  # VOD - Complaints, Issues, Requirements
-        bright_yellow, bright_yellow   # Result & Action - Store, Member
+        bright_yellow,  # VOD - Combined Complaints, Issues, Requirements
+        bright_yellow   # Result & Action - Combined Store, Member
     ]
     
     for col_idx, col_info in enumerate(columns, 1):
@@ -1542,11 +1685,8 @@ def _format_excel_sheet_enhanced(ws, reports, spvr_name, spvr_code):
             report.sfo_pmt or '',
             report.display_activities or '',
             report.store_issues or '',
-            report.complaints or '',
-            report.issues or '',
-            report.requirements or '',
-            report.actions_taken or '',
-            report.store_member_notes or ''
+            report.complaints or '',  # Combined complaints, issues, requirements
+            report.actions_taken or ''  # Combined store, member
         ]
         
         # Write data to cells
