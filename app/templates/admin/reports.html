@@ -48,20 +48,25 @@
                             <input type="date" class="form-control" id="end_date" name="end_date">
                         </div>
                         <div class="col-md-9 mb-3 d-flex align-items-end">
-                            <div class="btn-group" role="group">
+                            <div class="btn-group me-2" role="group">
                                 <button type="button" class="btn btn-primary" onclick="loadReports()">
                                     <i class="fas fa-search me-2"></i>Search
                                 </button>
                                 <button type="button" class="btn btn-secondary" onclick="clearFilters()">
                                     <i class="fas fa-times me-2"></i>Clear
                                 </button>
-                                <button type="button" class="btn btn-outline-info me-2" onclick="previewExport()">
+                            </div>
+                            <div class="btn-group me-2" role="group">
+                                <button type="button" class="btn btn-outline-info" onclick="previewExport()">
                                     <i class="fas fa-eye me-2"></i>Preview
                                 </button>
                                 <button type="button" class="btn btn-success" onclick="exportReports()">
                                     <i class="fas fa-download me-2"></i>Export Excel
                                 </button>
                             </div>
+                            <button type="button" class="btn btn-danger" onclick="deleteAllReports()">
+                                <i class="fas fa-trash-alt me-2"></i>Delete All Reports
+                            </button>
                         </div>
                     </div>
                 </form>
@@ -266,6 +271,69 @@ async function deleteReport(reportId) {
     } catch (error) {
         console.error('Error deleting report:', error);
         showToast('Error deleting report', 'danger');
+    }
+}
+
+async function deleteAllReports() {
+    // Get current filter parameters
+    const formData = new FormData(document.getElementById('filterForm'));
+    const params = new URLSearchParams(formData);
+    
+    // Check if there are any filters applied
+    const hasFilters = Array.from(formData.values()).some(value => value !== '');
+    
+    let confirmMessage = 'Are you sure you want to delete ALL reports in the database?\n\n';
+    confirmMessage += '⚠️ WARNING: This action cannot be undone!\n';
+    confirmMessage += '⚠️ ALL REPORTS WILL BE PERMANENTLY DELETED!\n\n';
+    
+    if (hasFilters) {
+        confirmMessage += 'Note: Current filters will be applied. Only matching reports will be deleted.\n\n';
+    } else {
+        confirmMessage += '⚠️ NO FILTERS APPLIED - ALL REPORTS IN THE SYSTEM WILL BE DELETED!\n\n';
+    }
+    
+    confirmMessage += 'Type "DELETE ALL" to confirm:';
+    
+    const userInput = prompt(confirmMessage);
+    
+    if (userInput !== 'DELETE ALL') {
+        if (userInput !== null) {
+            showToast('Deletion cancelled - confirmation text did not match', 'info');
+        }
+        return;
+    }
+    
+    // Show loading state
+    const deleteBtn = event.target.closest('button');
+    const originalContent = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deleting...';
+    deleteBtn.disabled = true;
+    
+    try {
+        const response = await fetch(`/admin/api/reports/delete-all?${params}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            showToast(`Successfully deleted ${result.deleted_count} report(s)`, 'success');
+            
+            // Reload reports
+            loadReports();
+        } else {
+            showToast(result.message || 'Failed to delete reports', 'danger');
+        }
+    } catch (error) {
+        console.error('Error deleting all reports:', error);
+        showToast('Error deleting reports', 'danger');
+    } finally {
+        // Restore button
+        deleteBtn.innerHTML = originalContent;
+        deleteBtn.disabled = false;
     }
 }
 
