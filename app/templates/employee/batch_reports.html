@@ -216,7 +216,7 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Store Issue (SDA, DOA)</label>
+                            <label class="form-label">Store Issue</label>
                             <textarea class="form-control" name="store_issues" rows="3"></textarea>
                         </div>
                     </div>
@@ -237,17 +237,9 @@
                             <i class="fas fa-exclamation-triangle me-2"></i>Store & Dealer's Situation
                         </h6>
                         <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Complaints</label>
-                                <textarea class="form-control" name="complaints" rows="3"></textarea>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Issues</label>
-                                <textarea class="form-control" name="issues" rows="3"></textarea>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Requirements</label>
-                                <textarea class="form-control" name="requirements" rows="3"></textarea>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Complaints, Issues, Requirements</label>
+                                <textarea class="form-control" name="complaints_issues_requirements" rows="4" placeholder="Please describe any complaints, issues, and requirements..."></textarea>
                             </div>
                         </div>
                     </div>
@@ -268,13 +260,9 @@
                             <i class="fas fa-check-circle me-2"></i>What I did?
                         </h6>
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Store</label>
-                                <textarea class="form-control" name="actions_taken" rows="4"></textarea>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Member</label>
-                                <textarea class="form-control" name="store_member_notes" rows="4"></textarea>
+                            <div class="col-md-12 mb-3">
+                                <label class="form-label">Store, Member</label>
+                                <textarea class="form-control" name="store_member_combined" rows="4" placeholder="Please describe actions taken for store and member..."></textarea>
                             </div>
                         </div>
                     </div>
@@ -642,11 +630,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 sfo_pmt: report.querySelector('[name="sfo_pmt"]').value,
                 display_activities: report.querySelector('[name="display_activities"]').value,
                 store_issues: report.querySelector('[name="store_issues"]').value,
-                complaints: report.querySelector('[name="complaints"]').value,
-                issues: report.querySelector('[name="issues"]').value,
-                requirements: report.querySelector('[name="requirements"]').value,
-                actions_taken: report.querySelector('[name="actions_taken"]').value,
-                store_member_notes: report.querySelector('[name="store_member_notes"]').value
+                complaints_issues_requirements: report.querySelector('[name="complaints_issues_requirements"]').value,
+                store_member_combined: report.querySelector('[name="store_member_combined"]').value
             };
             
             reportsData.push(reportData);
