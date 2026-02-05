@@ -34,17 +34,9 @@
     .preview-table th:nth-child(14),
     .preview-table td:nth-child(14) { min-width: 150px; } /* Sales */
     .preview-table th:nth-child(15),
-    .preview-table td:nth-child(15) { min-width: 150px; } /* Store Issue */
+    .preview-table td:nth-child(15) { min-width: 250px; } /* Complaints, Issues, Requirements */
     .preview-table th:nth-child(16),
-    .preview-table td:nth-child(16) { min-width: 180px; } /* Complaints */
-    .preview-table th:nth-child(17),
-    .preview-table td:nth-child(17) { min-width: 180px; } /* Issues */
-    .preview-table th:nth-child(18),
-    .preview-table td:nth-child(18) { min-width: 180px; } /* Requirements */
-    .preview-table th:nth-child(19),
-    .preview-table td:nth-child(19) { min-width: 180px; } /* Store */
-    .preview-table th:nth-child(20),
-    .preview-table td:nth-child(20) { min-width: 180px; } /* Member */
+    .preview-table td:nth-child(16) { min-width: 250px; } /* Store, Member */
     
     .preview-table {
         font-size: 0.85rem;
@@ -113,8 +105,8 @@
                                 <th colspan="2" class="text-center fw-bold" style="background-color: #D9E1F2;">Sales Movement</th>
                                 <th colspan="2" class="text-center fw-bold" style="background-color: #FCE4D6;">Samsung Product Availability</th>
                                 <th colspan="3" class="text-center fw-bold" style="background-color: #FFF2CC;">Store Activities</th>
-                                <th colspan="3" class="text-center fw-bold" style="background-color: #D9E1F2;">VOD</th>
-                                <th colspan="2" class="text-center fw-bold" style="background-color: #D9E1F2;">Result & Action</th>
+                                <th colspan="1" class="text-center fw-bold" style="background-color: #D9E1F2;">VOD</th>
+                                <th colspan="1" class="text-center fw-bold" style="background-color: #D9E1F2;">Result & Action</th>
                             </tr>
                             <!-- Row 2: Sub Headers -->
                             <tr>
@@ -124,8 +116,8 @@
                                 <th class="text-center fw-bold" style="background-color: #FCE4D6;">Ditributor, Key Model, Flag</th>
                                 <th class="text-center fw-bold" style="background-color: #FCE4D6;">Ditributor, Key Model, Flag</th>
                                 <th colspan="3" class="text-center fw-bold" style="background-color: #FFF2CC;">Samsung & Competitors</th>
-                                <th colspan="3" class="text-center fw-bold" style="background-color: #FFFF00;">Store & Dealer's Situation</th>
-                                <th colspan="2" class="text-center fw-bold" style="background-color: #FFFF00;">What I did ?</th>
+                                <th colspan="1" class="text-center fw-bold" style="background-color: #FFFF00;">Store & Dealer's Situation</th>
+                                <th colspan="1" class="text-center fw-bold" style="background-color: #FFFF00;">What I did ?</th>
                             </tr>
                             <!-- Row 3: Column Headers -->
                             <tr>
@@ -142,12 +134,9 @@
                                 <th class="text-center" style="background-color: #FCE4D6;">HA</th>
                                 <th class="text-center" style="background-color: #FFF2CC;">SFO, PMT</th>
                                 <th class="text-center" style="background-color: #FFF2CC;">Display</th>
-                                <th class="text-center" style="background-color: #FFF2CC;">Store Issue (SDA, DOA)</th>
-                                <th class="text-center" style="background-color: #FFFF00;">Complaints</th>
-                                <th class="text-center" style="background-color: #FFFF00;">Issues</th>
-                                <th class="text-center" style="background-color: #FFFF00;">Requirements</th>
-                                <th class="text-center" style="background-color: #FFFF00;">Store</th>
-                                <th class="text-center" style="background-color: #FFFF00;">Member</th>
+                                <th class="text-center" style="background-color: #FFF2CC;">Store Issue</th>
+                                <th class="text-center" style="background-color: #FFFF00;">Complaints, Issues, Requirements</th>
+                                <th class="text-center" style="background-color: #FFFF00;">Store, Member</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -168,16 +157,13 @@
                                     <td>{{ (report.sfo_pmt or '')[:20] }}{% if report.sfo_pmt and report.sfo_pmt|length > 20 %}...{% endif %}</td>
                                     <td>{{ (report.display_activities or '')[:20] }}{% if report.display_activities and report.display_activities|length > 20 %}...{% endif %}</td>
                                     <td>{{ (report.store_issues or '')[:20] }}{% if report.store_issues and report.store_issues|length > 20 %}...{% endif %}</td>
-                                    <td>{{ (report.complaints or '')[:20] }}{% if report.complaints and report.complaints|length > 20 %}...{% endif %}</td>
-                                    <td>{{ (report.issues or '')[:20] }}{% if report.issues and report.issues|length > 20 %}...{% endif %}</td>
-                                    <td>{{ (report.requirements or '')[:20] }}{% if report.requirements and report.requirements|length > 20 %}...{% endif %}</td>
-                                    <td>{{ (report.actions_taken or '')[:30] }}{% if report.actions_taken and report.actions_taken|length > 30 %}...{% endif %}</td>
-                                    <td>{{ (report.store_member_notes or '')[:30] }}{% if report.store_member_notes and report.store_member_notes|length > 30 %}...{% endif %}</td>
+                                    <td>{{ (report.complaints or '')[:40] }}{% if report.complaints and report.complaints|length > 40 %}...{% endif %}</td>
+                                    <td>{{ (report.actions_taken or '')[:40] }}{% if report.actions_taken and report.actions_taken|length > 40 %}...{% endif %}</td>
                                 </tr>
                                 {% endfor %}
                             {% else %}
                                 <tr>
-                                    <td colspan="20" class="text-center text-muted py-4">
+                                    <td colspan="16" class="text-center text-muted py-4">
                                         <i class="fas fa-info-circle me-2"></i>
                                         No reports available for preview. Create some reports first.
                                     </td>
