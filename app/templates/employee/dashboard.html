@@ -71,21 +71,28 @@
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <div class="d-grid">
                             <a href="{{ url_for('employee.create_report') }}" class="btn btn-primary btn-lg">
                                 <i class="fas fa-plus me-2"></i>Single Report
                             </a>
                         </div>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <div class="d-grid">
                             <a href="{{ url_for('employee.batch_reports') }}" class="btn btn-success btn-lg">
                                 <i class="fas fa-layer-group me-2"></i>Batch Reports
                             </a>
                         </div>
                     </div>
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
+                        <div class="d-grid">
+                            <button type="button" class="btn btn-warning btn-lg" onclick="markVacation()">
+                                <i class="fas fa-umbrella-beach me-2"></i>Vacation
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
                         <div class="d-grid">
                             <a href="{{ url_for('employee.view_reports') }}" class="btn btn-outline-primary btn-lg">
                                 <i class="fas fa-eye me-2"></i>View Reports
@@ -169,4 +176,151 @@
     </div>
 </div>
 {% endif %}
+
+<!-- Vacation Status Alert -->
+<div id="vacationAlert" class="alert alert-info alert-dismissible fade" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 1050; max-width: 400px;" role="alert">
+    <i class="fas fa-umbrella-beach me-2"></i>
+    <strong>Vacation Status!</strong> <span id="vacationMessage"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user has vacation today
+    checkTodayVacation();
+});
+
+function markVacation() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Show confirmation dialog
+    if (!confirm(`Are you sure you want to mark vacation for today (${today})?`)) {
+        return; // User cancelled
+    }
+    
+    // Show loading state immediately
+    const vacationBtn = document.querySelector('button[onclick="markVacation()"]');
+    if (!vacationBtn) {
+        console.error('Vacation button not found');
+        return;
+    }
+    
+    const originalContent = vacationBtn.innerHTML;
+    vacationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    vacationBtn.disabled = true;
+    
+    console.log('Sending vacation request for date:', today);
+    
+    fetch('{{ url_for("employee.mark_vacation") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            vacation_date: today
+        })
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Vacation response:', data);
+        if (data.success) {
+            showVacationAlert(data.message, 'success');
+            updateVacationButton(true);
+        } else {
+            showVacationAlert(data.message || 'Failed to mark vacation', 'danger');
+            // Restore button if failed
+            vacationBtn.innerHTML = originalContent;
+            vacationBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error marking vacation:', error);
+        showVacationAlert('Error marking vacation. Please try again.', 'danger');
+        // Restore button if failed
+        vacationBtn.innerHTML = originalContent;
+        vacationBtn.disabled = false;
+    });
+}
+
+function checkTodayVacation() {
+    const today = new Date().toISOString().split('T')[0];
+    
+    console.log('Checking vacation for date:', today);
+    
+    fetch(`{{ url_for("employee.check_vacation") }}?date=${today}`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        console.log('Check vacation response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Check vacation response:', data);
+        if (data.success && data.has_vacation) {
+            updateVacationButton(true);
+            showVacationAlert(`You have marked vacation for today (${today})`, 'info');
+        } else {
+            updateVacationButton(false);
+        }
+    })
+    .catch(error => {
+        console.error('Error checking vacation:', error);
+        updateVacationButton(false);
+    });
+}
+
+function updateVacationButton(hasVacation) {
+    const vacationBtn = document.querySelector('button[onclick="markVacation()"]');
+    if (hasVacation) {
+        vacationBtn.innerHTML = '<i class="fas fa-check me-2"></i>Vacation Marked';
+        vacationBtn.className = 'btn btn-secondary btn-lg';
+        vacationBtn.disabled = true;
+    } else {
+        vacationBtn.innerHTML = '<i class="fas fa-umbrella-beach me-2"></i>Vacation';
+        vacationBtn.className = 'btn btn-warning btn-lg';
+        vacationBtn.disabled = false;
+    }
+}
+
+function showVacationAlert(message, type) {
+    const alertDiv = document.getElementById('vacationAlert');
+    const messageSpan = document.getElementById('vacationMessage');
+    
+    if (!alertDiv || !messageSpan) {
+        console.error('Alert elements not found');
+        return;
+    }
+    
+    // Update alert content and style
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    messageSpan.textContent = message;
+    alertDiv.style.display = 'block';
+    
+    console.log(`Showing alert: ${type} - ${message}`);
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        setTimeout(() => {
+            alertDiv.style.display = 'none';
+        }, 150); // Wait for fade animation
+    }, 5000);
+}
+</script>
 {% endblock %}
