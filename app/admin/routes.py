@@ -951,6 +951,19 @@ def api_delete_admin_user(admin_id):
 def reports():
     return render_template('admin/reports.html')
 
+@bp.route('/reports/<int:report_id>/view')
+@admin_required
+def view_report_detail(report_id):
+    """عرض تفاصيل تقرير معين"""
+    report = Report.query.get_or_404(report_id)
+    
+    # Mark report as read by admin
+    if not report.is_read:
+        report.is_read = True
+        db.session.commit()
+    
+    return render_template('admin/view_report_detail.html', report=report)
+
 @bp.route('/api/reports')
 @admin_required
 def api_reports():
