@@ -34,8 +34,14 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="report_date" class="form-label">Date & Time</label>
-                            <input type="datetime-local" class="form-control" id="report_date" readonly>
+                            <label for="report_date_picker" class="form-label">Report Date *</label>
+                            <input type="date" class="form-control" id="report_date_picker" name="report_date_picker" required>
+                            <div class="form-text">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Default is today's business date. Change if needed for past reports.
+                                </small>
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="branch_id" class="form-label">Shop *</label>
@@ -229,10 +235,26 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Set current date and time
+    // Set default business date (considering 6 AM cutoff)
     const now = new Date();
-    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    document.getElementById('report_date').value = localDateTime;
+    const hour = now.getHours();
+    
+    // If before 6 AM, use previous day
+    let businessDate = new Date(now);
+    if (hour < 6) {
+        businessDate.setDate(businessDate.getDate() - 1);
+    }
+    
+    // Format date as YYYY-MM-DD for date input
+    const year = businessDate.getFullYear();
+    const month = String(businessDate.getMonth() + 1).padStart(2, '0');
+    const day = String(businessDate.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+    
+    document.getElementById('report_date_picker').value = formattedDate;
+    
+    console.log('Current time:', now.toLocaleString());
+    console.log('Business date set to:', formattedDate);
     
     // Branch search functionality
     const branchSearch = document.getElementById('branch_search');
