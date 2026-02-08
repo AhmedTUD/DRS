@@ -123,6 +123,41 @@
         </div>
     </div>
 </div>
+
+<!-- Export Loading Modal -->
+<div class="modal fade" id="exportLoadingModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <div class="mb-4">
+                    <div class="spinner-border text-success" role="status" style="width: 4rem; height: 4rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <h5 class="mb-3">
+                    <i class="fas fa-file-excel text-success me-2"></i>
+                    Preparing Excel Export
+                </h5>
+                <p class="text-muted mb-4">Please wait while we generate your report...</p>
+                
+                <div class="progress mb-3" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" 
+                         role="progressbar" 
+                         style="width: 100%"
+                         id="exportProgress">
+                        <span class="fw-bold">Processing...</span>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <small>This may take a few moments for large datasets</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -236,7 +271,66 @@ function exportReports() {
     const formData = new FormData(document.getElementById('filterForm'));
     const params = new URLSearchParams(formData);
     
-    window.location.href = `{{ url_for('admin.export_reports') }}?${params}`;
+    // Show loading modal
+    const exportModal = new bootstrap.Modal(document.getElementById('exportLoadingModal'));
+    exportModal.show();
+    
+    // Get modal elements
+    const modalBody = document.querySelector('#exportLoadingModal .modal-body');
+    const progressBar = document.getElementById('exportProgress');
+    
+    // Update progress text with animation
+    let dots = 0;
+    const progressInterval = setInterval(() => {
+        dots = (dots + 1) % 4;
+        progressBar.innerHTML = '<span class="fw-bold">Processing' + '.'.repeat(dots) + '</span>';
+    }, 500);
+    
+    // Create a hidden iframe to download the file
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = `{{ url_for('admin.export_reports') }}?${params}`;
+    document.body.appendChild(iframe);
+    
+    // After download starts, show success message
+    setTimeout(() => {
+        clearInterval(progressInterval);
+        
+        // Change modal content to success message
+        modalBody.innerHTML = `
+            <div class="text-center py-4">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle fa-5x text-success"></i>
+                </div>
+                <h4 class="text-success mb-3">
+                    <i class="fas fa-file-excel me-2"></i>
+                    Excel File Downloaded Successfully!
+                </h4>
+                <p class="text-muted mb-4">Your report has been generated and downloaded.</p>
+                <button type="button" class="btn btn-success" data-bs-dismiss="modal">
+                    <i class="fas fa-check me-2"></i>Done
+                </button>
+            </div>
+        `;
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            exportModal.hide();
+            document.body.removeChild(iframe);
+        }, 3000);
+        
+    }, 2500);
+    
+    // Fallback: hide on any error after 10 seconds
+    setTimeout(() => {
+        if (document.getElementById('exportLoadingModal').classList.contains('show')) {
+            clearInterval(progressInterval);
+            exportModal.hide();
+            if (iframe.parentNode) {
+                document.body.removeChild(iframe);
+            }
+        }
+    }, 10000);
 }
 
 async function deleteReport(reportId) {
