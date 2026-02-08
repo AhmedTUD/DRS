@@ -193,11 +193,18 @@ function loadReports() {
                             </button>
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-outline-danger" 
-                                    onclick="deleteReport(${report.id})"
-                                    title="Delete Report">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            <div class="btn-group" role="group">
+                                <a href="/admin/reports/${report.id}/view" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   title="View Report Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="deleteReport(${report.id})"
+                                        title="Delete Report">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         </td>
                     `;
                 });
