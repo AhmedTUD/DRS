@@ -33,8 +33,14 @@
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label for="batch_date" class="form-label">Report Date & Time</label>
-                        <input type="datetime-local" class="form-control" id="batch_date" readonly>
+                        <label for="batch_date_picker" class="form-label">Report Date *</label>
+                        <input type="date" class="form-control" id="batch_date_picker">
+                        <div class="form-text">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                All reports will use this date
+                            </small>
+                        </div>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Reports Count</label>
@@ -284,10 +290,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitAllBtn = document.getElementById('submit_all_btn');
     const clearAllBtn = document.getElementById('clear_all_btn');
     
-    // Set current date and time
+    // Set default business date (considering 6 AM cutoff)
     const now = new Date();
-    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    document.getElementById('batch_date').value = localDateTime;
+    const hour = now.getHours();
+    
+    // If before 6 AM, use previous day
+    let businessDate = new Date(now);
+    if (hour < 6) {
+        businessDate.setDate(businessDate.getDate() - 1);
+    }
+    
+    // Format date as YYYY-MM-DD for date input
+    const year = businessDate.getFullYear();
+    const month = String(businessDate.getMonth() + 1).padStart(2, '0');
+    const day = String(businessDate.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
+    
+    document.getElementById('batch_date_picker').value = formattedDate;
+    
+    console.log('Current time:', now.toLocaleString());
+    console.log('Business date set to:', formattedDate);
     
     // Add first report automatically
     addReport();
@@ -649,7 +671,7 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             body: JSON.stringify({
                 reports: reportsData,
-                report_date: document.getElementById('batch_date').value
+                report_date: document.getElementById('batch_date_picker').value
             })
         })
         .then(response => response.json())
