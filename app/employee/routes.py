@@ -47,20 +47,39 @@ def parse_date_filter(date_str, is_end_date=False):
         
         # Convert Egypt local time to UTC for database query
         egypt_tz = get_egypt_timezone()
+        localized_date = egypt_tz.localize(parsed_date) if hasattr(egypt_tz, 'localize') else parsed_date.replace(tzinfo=egypt_tz)
+        utc_date = localized_date.astimezone(pytz.UTC)
         
-        try:
-            # Try zoneinfo first (Python 3.9+)
-            egypt_datetime = parsed_date.replace(tzinfo=egypt_tz)
-        except:
-            # Fallback to pytz
-            egypt_tz = pytz.timezone('Africa/Cairo')
-            egypt_datetime = egypt_tz.localize(parsed_date)
-        
-        # Convert to UTC and remove timezone info for database
-        return egypt_datetime.astimezone(pytz.UTC).replace(tzinfo=None)
-        
-    except ValueError:
+        return utc_date
+    except Exception as e:
+        print(f"Error parsing date '{date_str}': {e}")
         return None
+
+def get_business_date(current_datetime=None):
+    """
+    Get the business date based on 6 AM cutoff.
+    Reports submitted between 12 AM and 6 AM belong to the previous day.
+    Reports submitted after 6 AM belong to the current day.
+    
+    Args:
+        current_datetime: datetime object (Egypt timezone). If None, uses current time.
+    
+    Returns:
+        date object representing the business date
+    """
+    if current_datetime is None:
+        # Get current time in Egypt timezone
+        egypt_tz = get_egypt_timezone()
+        current_datetime = datetime.now(egypt_tz)
+    
+    # If time is before 6 AM, use previous day
+    if current_datetime.hour < 6:
+        from datetime import timedelta
+        business_date = (current_datetime - timedelta(days=1)).date()
+    else:
+        business_date = current_datetime.date()
+    
+    return business_date
 
 def login_required(f):
     @wraps(f)
@@ -75,6 +94,12 @@ def login_required(f):
 @login_required
 def dashboard():
     user = User.query.get(session['user_id'])
+    
+    # Prevent admin from accessing employee dashboard
+    if user.is_admin:
+        flash('This is the employee dashboard. Redirecting to admin dashboard.', 'info')
+        return redirect(url_for('admin.dashboard'))
+    
     print(f"🏠 Dashboard accessed by user: {user.employee_name} (ID: {user.id})")
     
     # Get recent reports ordered by creation date (most recent first)
@@ -113,6 +138,11 @@ def dashboard():
 @login_required
 def create_report():
     user = User.query.get(session['user_id'])
+    
+    # Prevent admin from accessing employee pages
+    if user.is_admin:
+        flash('Admins cannot create reports. This page is for employees only.', 'error')
+        return redirect(url_for('admin.dashboard'))
     
     if request.method == 'POST':
         try:
@@ -189,11 +219,41 @@ def create_report():
             # Result & Action (combined field)
             store_member_combined = request.form.get('store_member_combined', '')
             
+            # Get report date from form or use business date
+            report_date_str = request.form.get('report_date_picker', '')
+            egypt_tz = get_egypt_timezone()
+            current_time = datetime.now(egypt_tz)
+            
+            if report_date_str:
+                try:
+                    # Parse the selected date
+                    selected_date = datetime.strptime(report_date_str, '%Y-%m-%d').date()
+                    # Combine with current time
+                    report_datetime = datetime.combine(selected_date, current_time.time())
+                    report_datetime = report_datetime.replace(tzinfo=egypt_tz)
+                    print(f"📅 Using selected date: {selected_date}")
+                except:
+                    # If parsing fails, use business date
+                    business_date = get_business_date(current_time)
+                    report_datetime = datetime.combine(business_date, current_time.time())
+                    report_datetime = report_datetime.replace(tzinfo=egypt_tz)
+                    print(f"⚠️ Date parsing failed, using business date: {business_date}")
+            else:
+                # No date provided, use business date
+                business_date = get_business_date(current_time)
+                report_datetime = datetime.combine(business_date, current_time.time())
+                report_datetime = report_datetime.replace(tzinfo=egypt_tz)
+                print(f"📅 No date provided, using business date: {business_date}")
+            
+            print(f"⏰ Current time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"📝 Report datetime: {report_datetime.strftime('%Y-%m-%d %H:%M:%S')}")
+            
             # Create report
             report = Report(
                 user_id=user.id,
                 area_id=area_id,
                 store_id=store_id,
+                report_date=report_datetime,
                 samsung_sales=samsung_sales,
                 competitors_sales=competitors_sales,
                 tv_availability=tv_availability,
@@ -227,6 +287,12 @@ def create_report():
 def batch_reports():
     """صفحة إنشاء تقارير متعددة"""
     user = User.query.get(session['user_id'])
+    
+    # Prevent admin from accessing employee pages
+    if user.is_admin:
+        flash('Admins cannot create reports. This page is for employees only.', 'error')
+        return redirect(url_for('admin.dashboard'))
+    
     return render_template('employee/batch_reports.html', user=user)
 
 @bp.route('/submit-batch-reports', methods=['POST'])
@@ -246,15 +312,34 @@ def submit_batch_reports():
         print(f"📝 Batch submission from user {user.employee_name}")
         print(f"📋 Number of reports: {len(reports_data)}")
         
-        # Parse report date
-        report_date = None
+        # Get report date from request or use business date
+        report_date_str = data.get('report_date', '')
+        egypt_tz = get_egypt_timezone()
+        current_time = datetime.now(egypt_tz)
+        
         if report_date_str:
             try:
-                report_date = datetime.fromisoformat(report_date_str.replace('T', ' '))
+                # Parse the selected date (YYYY-MM-DD format)
+                selected_date = datetime.strptime(report_date_str, '%Y-%m-%d').date()
+                # Combine with current time
+                report_date = datetime.combine(selected_date, current_time.time())
+                report_date = report_date.replace(tzinfo=egypt_tz)
+                print(f"📅 Using selected date: {selected_date}")
             except:
-                report_date = datetime.utcnow()
+                # If parsing fails, use business date
+                business_date = get_business_date(current_time)
+                report_date = datetime.combine(business_date, current_time.time())
+                report_date = report_date.replace(tzinfo=egypt_tz)
+                print(f"⚠️ Date parsing failed, using business date: {business_date}")
         else:
-            report_date = datetime.utcnow()
+            # No date provided, use business date
+            business_date = get_business_date(current_time)
+            report_date = datetime.combine(business_date, current_time.time())
+            report_date = report_date.replace(tzinfo=egypt_tz)
+            print(f"📅 No date provided, using business date: {business_date}")
+        
+        print(f"⏰ Current time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"📝 Report datetime: {report_date.strftime('%Y-%m-%d %H:%M:%S')}")
         
         created_reports = []
         
