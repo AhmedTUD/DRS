@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Report Details - Daily Report System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-file-alt me-2"></i>Report Details
+            </h1>
+            <a href="{{ url_for('admin.reports') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Reports
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Report Header Information -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Report Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Report Date:</strong></td>
+                                <td>{{ report.report_date.strftime('%Y-%m-%d %H:%M') if report.report_date else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>SPVR Name:</strong></td>
+                                <td>{{ report.employee.employee_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>SPVR Code:</strong></td>
+                                <td><code>{{ report.employee.employee_code }}</code></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Shop Name:</strong></td>
+                                <td>{{ report.store.name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Shop Code:</strong></td>
+                                <td><code>{{ report.store.code }}</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Region:</strong></td>
+                                <td><span class="badge bg-info">{{ report.area.name }}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Content -->
+<div class="row">
+    <div class="col-12">
+        <div class="accordion" id="reportAccordion">
+            
+            <!-- Sales Movement Section -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="salesHeading">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#salesCollapse" aria-expanded="true" aria-controls="salesCollapse">
+                        <i class="fas fa-chart-line me-2"></i>Sales Movement
+                    </button>
+                </h2>
+                <div id="salesCollapse" class="accordion-collapse collapse show" aria-labelledby="salesHeading" data-bs-parent="#reportAccordion">
+                    <div class="accordion-body">
+                        <h6 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-shopping-cart me-2"></i>Samsung & Competitors (LG, Araby, Others)
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Samsung Sales:</strong></label>
+                                    <div class="form-control-plaintext border rounded p-3 bg-light" style="min-height: 100px;">
+                                        {{ report.samsung_sales or 'No data provided' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Competitors Sales:</strong></label>
+                                    <div class="form-control-plaintext border rounded p-3 bg-light" style="min-height: 100px;">
+                                        {{ report.competitors_sales or 'No data provided' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Samsung Product Availability Section -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="productHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#productCollapse" aria-expanded="false" aria-controls="productCollapse">
+                        <i class="fas fa-tv me-2"></i>Samsung Product Availability
+                    </button>
+                </h2>
+                <div id="productCollapse" class="accordion-collapse collapse" aria-labelledby="productHeading" data-bs-parent="#reportAccordion">
+                    <div class="accordion-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-box me-2"></i>Ditributor, Key Model, Flag
+                                </h6>
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>TV Availability:</strong></label>
+                                    <div class="form-control-plaintext border rounded p-3 bg-light" style="min-height: 100px;">
+                                        {{ report.tv_availability or 'No data provided' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="border-bottom pb-2 mb-3">
+                                    <i class="fas fa-box me-2"></i>Ditributor, Key Model, Flag
+                                </h6>
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>HA (Home Appliances) Availability:</strong></label>
+                                    <div class="form-control-plaintext border rounded p-3 bg-light" style="min-height: 100px;">
+                                        {{ report.ha_availability or 'No data provided' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Store Activities Section -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="activitiesHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#activitiesCollapse" aria-expanded="false" aria-controls="activitiesCollapse">
+                        <i class="fas fa-store me-2"></i>Store Activities
+                    </button>
+                </h2>
+                <div id="activitiesCollapse" class="accordion-collapse collapse" aria-labelledby="activitiesHeading" data-bs-parent="#reportAccordion">
+                    <div class="accordion-body">
+                        <h6 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-handshake me-2"></i>Samsung & Competitors
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>SFO, PMT:</strong></label>
+                                    <div class="form-control-plaintext border rounded p-3 bg-light" style="min-height: 80px;">
+                                        {{ report.sfo_pmt or 'No data provided' }}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Display Activities:</strong></label>
+                                    <div class="form-control-plaintext border rounded p-3 bg-light" style="min-height: 80px;">
+                                        {{ report.display_activities or 'No data provided' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Store Issues:</strong></label>
+                                    <div class="form-control-plaintext border rounded p-3 bg-light" style="min-height: 80px;">
+                                        {{ report.store_issues or 'No data provided' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VOD Section -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="vodHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#vodCollapse" aria-expanded="false" aria-controls="vodCollapse">
+                        <i class="fas fa-video me-2"></i>VOD
+                    </button>
+                </h2>
+                <div id="vodCollapse" class="accordion-collapse collapse" aria-labelledby="vodHeading" data-bs-parent="#reportAccordion">
+                    <div class="accordion-body">
+                        <!-- Store & Dealer's Situation Subsection -->
+                        <div class="mb-4">
+                            <h5 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-exclamation-triangle me-2"></i>Store & Dealer's Situation
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label class="form-label"><strong>Complaints, Issues, Requirements:</strong></label>
+                                        <div class="form-control-plaintext border rounded p-3 bg-light" style="min-height: 120px;">
+                                            {{ report.complaints or 'No data provided' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result & Action Section -->
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="resultHeading">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#resultCollapse" aria-expanded="false" aria-controls="resultCollapse">
+                        <i class="fas fa-tasks me-2"></i>Result & Action
+                    </button>
+                </h2>
+                <div id="resultCollapse" class="accordion-collapse collapse" aria-labelledby="resultHeading" data-bs-parent="#reportAccordion">
+                    <div class="accordion-body">
+                        <!-- What I did? Subsection -->
+                        <div class="mb-3">
+                            <h6 class="border-bottom pb-2 mb-3">
+                                <i class="fas fa-check-circle me-2"></i>What I did?
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label class="form-label"><strong>Store, Member:</strong></label>
+                                        <div class="form-control-plaintext border rounded p-3 bg-light" style="min-height: 120px;">
+                                            {{ report.actions_taken or 'No data provided' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Comments Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-comments me-2"></i>Admin Comments
+                    <span id="commentsCount" class="badge bg-light text-dark ms-2">0</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                <!-- Report Status Badge -->
+                <div class="mb-3">
+                    <strong>Report Status:</strong>
+                    <span id="reportStatusBadge" class="badge bg-secondary ms-2">Loading...</span>
+                </div>
+
+                <!-- Comments List -->
+                <div id="commentsList">
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading comments...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="noCommentsMessage" class="text-center text-muted py-4" style="display: none;">
+                    <i class="fas fa-comment-slash fa-2x mb-2"></i>
+                    <p>No comments yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Footer -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-secondary">
+            <div class="card-body text-center">
+                <p class="text-muted mb-2">
+                    <i class="fas fa-clock me-2"></i>Report submitted on: 
+                    <strong id="submittedTime">{{ report.created_at.strftime('%Y-%m-%d at %H:%M') if report.created_at else 'N/A' }}</strong>
+                </p>
+                <a href="{{ url_for('admin.reports') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Reports
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const reportId = parseInt('{{ report.id|default(0) }}') || 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (reportId && reportId > 0) {
+        loadComments();
+    }
+});
+
+function loadComments() {
+    fetch(`/admin/api/reports/${reportId}/comments`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayComments(data.comments);
+                updateReportStatus(data.report_status);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading comments:', error);
+            document.getElementById('commentsList').innerHTML = 
+                '<div class="alert alert-danger">Error loading comments</div>';
+        });
+}
+
+function displayComments(comments) {
+    const commentsList = document.getElementById('commentsList');
+    const noCommentsMessage = document.getElementById('noCommentsMessage');
+    const commentsCount = document.getElementById('commentsCount');
+
+    commentsCount.textContent = comments.length;
+
+    if (comments.length === 0) {
+        commentsList.style.display = 'none';
+        noCommentsMessage.style.display = 'block';
+        return;
+    }
+
+    commentsList.style.display = 'block';
+    noCommentsMessage.style.display = 'none';
+    commentsList.innerHTML = '';
+
+    comments.forEach(comment => {
+        const commentDiv = document.createElement('div');
+        commentDiv.className = 'card mb-3 border-start border-primary border-3';
+        commentDiv.innerHTML = `
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="mb-0">
+                        <i class="fas fa-user-shield text-primary me-2"></i>${comment.commenter_name}
+                    </h6>
+                    <small class="text-muted">
+                        <i class="far fa-clock me-1"></i>${comment.created_at}
+                    </small>
+                </div>
+                <p class="mb-0" style="white-space: pre-wrap;">${comment.comment_text}</p>
+            </div>
+        `;
+        commentsList.appendChild(commentDiv);
+    });
+}
+
+function updateReportStatus(status) {
+    const statusBadge = document.getElementById('reportStatusBadge');
+    const statusMap = {
+        'new': { text: 'جديد', class: 'bg-primary' },
+        'under_review': { text: 'تحت المراجعة', class: 'bg-warning' },
+        'reviewed': { text: 'تمت المراجعة', class: 'bg-success' },
+        'needs_revision': { text: 'يحتاج تعديل', class: 'bg-danger' }
+    };
+
+    const statusInfo = statusMap[status] || { text: status, class: 'bg-secondary' };
+    statusBadge.textContent = statusInfo.text;
+    statusBadge.className = `badge ${statusInfo.class} ms-2`;
+}
+</script>
+{% endblock %}
