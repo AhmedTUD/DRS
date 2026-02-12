@@ -2,6 +2,54 @@
 
 {% block title %}SPVR Dashboard - Daily Report System{% endblock %}
 
+{% block styles %}
+<style>
+    /* Make all Quick Action buttons the same height */
+    .card-body .btn-lg {
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        white-space: normal;
+        text-align: center;
+    }
+    
+    .card-body .btn-lg i {
+        font-size: 2rem !important;
+        margin-bottom: 0.5rem;
+    }
+    
+    .card-body .btn-lg span {
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+    
+    /* Ensure consistent spacing */
+    .row.g-3 {
+        margin: -0.5rem;
+    }
+    
+    .row.g-3 > * {
+        padding: 0.5rem;
+    }
+    
+    /* Fix vacation button to maintain size when content changes */
+    button[onclick="markVacation()"] {
+        min-height: 120px !important;
+        max-height: 120px !important;
+        height: 120px !important;
+    }
+    
+    /* Ensure button content doesn't overflow */
+    button[onclick="markVacation()"] i,
+    button[onclick="markVacation()"] span {
+        display: block !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
@@ -70,32 +118,36 @@
                 </h5>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3 mb-3">
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
                         <div class="d-grid">
                             <a href="{{ url_for('employee.create_report') }}" class="btn btn-primary btn-lg">
-                                <i class="fas fa-plus me-2"></i>Single Report
+                                <i class="fas fa-plus d-block mb-2" style="font-size: 1.5rem;"></i>
+                                <span class="d-block">Single Report</span>
                             </a>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-6 col-md-3">
                         <div class="d-grid">
                             <a href="{{ url_for('employee.batch_reports') }}" class="btn btn-success btn-lg">
-                                <i class="fas fa-layer-group me-2"></i>Batch Reports
+                                <i class="fas fa-layer-group d-block mb-2" style="font-size: 1.5rem;"></i>
+                                <span class="d-block">Batch Reports</span>
                             </a>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-6 col-md-3">
                         <div class="d-grid">
                             <button type="button" class="btn btn-warning btn-lg" onclick="markVacation()">
-                                <i class="fas fa-umbrella-beach me-2"></i>Vacation
+                                <i class="fas fa-umbrella-beach d-block mb-2" style="font-size: 1.5rem;"></i>
+                                <span class="d-block">Vacation</span>
                             </button>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-6 col-md-3">
                         <div class="d-grid">
                             <a href="{{ url_for('employee.view_reports') }}" class="btn btn-outline-primary btn-lg">
-                                <i class="fas fa-eye me-2"></i>View Reports
+                                <i class="fas fa-eye d-block mb-2" style="font-size: 1.5rem;"></i>
+                                <span class="d-block">View Reports</span>
                             </a>
                         </div>
                     </div>
@@ -209,7 +261,7 @@ function markVacation() {
     }
     
     const originalContent = vacationBtn.innerHTML;
-    vacationBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+    vacationBtn.innerHTML = '<i class="fas fa-spinner fa-spin d-block mb-2" style="font-size: 1.5rem;"></i><span class="d-block">Processing...</span>';
     vacationBtn.disabled = true;
     
     console.log('Sending vacation request for date:', today);
@@ -288,11 +340,11 @@ function checkTodayVacation() {
 function updateVacationButton(hasVacation) {
     const vacationBtn = document.querySelector('button[onclick="markVacation()"]');
     if (hasVacation) {
-        vacationBtn.innerHTML = '<i class="fas fa-check me-2"></i>Vacation Marked';
+        vacationBtn.innerHTML = '<i class="fas fa-check d-block mb-2" style="font-size: 1.5rem;"></i><span class="d-block">Vacation Marked</span>';
         vacationBtn.className = 'btn btn-secondary btn-lg';
         vacationBtn.disabled = true;
     } else {
-        vacationBtn.innerHTML = '<i class="fas fa-umbrella-beach me-2"></i>Vacation';
+        vacationBtn.innerHTML = '<i class="fas fa-umbrella-beach d-block mb-2" style="font-size: 1.5rem;"></i><span class="d-block">Vacation</span>';
         vacationBtn.className = 'btn btn-warning btn-lg';
         vacationBtn.disabled = false;
     }
