@@ -1251,17 +1251,37 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
         try:
             vacation_start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
         except:
-            vacation_start_date = date.today()
+            # If parsing fails, get earliest vacation date or use 30 days ago
+            earliest_vacation = Vacation.query.order_by(Vacation.vacation_date.asc()).first()
+            if earliest_vacation:
+                vacation_start_date = earliest_vacation.vacation_date
+            else:
+                vacation_start_date = date.today() - timedelta(days=30)
     else:
-        vacation_start_date = date.today()
+        # If no start date provided, get earliest vacation date or use 30 days ago
+        earliest_vacation = Vacation.query.order_by(Vacation.vacation_date.asc()).first()
+        if earliest_vacation:
+            vacation_start_date = earliest_vacation.vacation_date
+        else:
+            vacation_start_date = date.today() - timedelta(days=30)
         
     if end_date:
         try:
             vacation_end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         except:
-            vacation_end_date = date.today()
+            # If parsing fails, get latest vacation date or use today
+            latest_vacation = Vacation.query.order_by(Vacation.vacation_date.desc()).first()
+            if latest_vacation:
+                vacation_end_date = latest_vacation.vacation_date
+            else:
+                vacation_end_date = date.today()
     else:
-        vacation_end_date = date.today()
+        # If no end date provided, get latest vacation date or use today
+        latest_vacation = Vacation.query.order_by(Vacation.vacation_date.desc()).first()
+        if latest_vacation:
+            vacation_end_date = latest_vacation.vacation_date
+        else:
+            vacation_end_date = date.today()
     
     print(f"🏖️ Checking vacations from {vacation_start_date} to {vacation_end_date}")
     
@@ -1307,18 +1327,19 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
     # Now check vacations for ALL employees (both with and without reports)
     for employee in all_employees:
         if employee.employee_code in employee_stats:
-            # Check if employee has vacation in the date range
-            vacation = Vacation.query.filter(
+            # Check if employee has vacation in the date range - GET ALL vacations, not just first
+            vacations = Vacation.query.filter(
                 Vacation.user_id == employee.id,
                 Vacation.vacation_date >= vacation_start_date,
                 Vacation.vacation_date <= vacation_end_date
-            ).first()
+            ).all()
             
-            has_vacation = vacation is not None
+            has_vacation = len(vacations) > 0
             employee_stats[employee.employee_code]['has_vacation'] = has_vacation
             
             if has_vacation:
-                print(f"🏖️ Found vacation for {employee.employee_name} ({employee.employee_code}) on {vacation.vacation_date}")
+                vacation_dates = [v.vacation_date.strftime('%Y-%m-%d') for v in vacations]
+                print(f"🏖️ Found {len(vacations)} vacation(s) for {employee.employee_name} ({employee.employee_code}): {', '.join(vacation_dates)}")
             else:
                 print(f"💼 No vacation found for {employee.employee_name} ({employee.employee_code})")
     
@@ -1447,6 +1468,133 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
     
     # Freeze panes
     ws.freeze_panes = 'A4'
+    
+    # ============================================================================
+    # ADD VACATION DETAILS TABLE
+    # ============================================================================
+    
+    # Add vacation details table below the summary statistics
+    vacation_table_start_row = summary_row + len(summary_data) + 3
+    
+    # Get all vacations in the date range for all employees
+    from datetime import timedelta
+    
+    all_vacations = Vacation.query.filter(
+        Vacation.vacation_date >= vacation_start_date,
+        Vacation.vacation_date <= vacation_end_date
+    ).order_by(Vacation.user_id, Vacation.vacation_date).all()
+    
+    # Group vacations by employee
+    employee_vacations = {}
+    for vacation in all_vacations:
+        user = User.query.get(vacation.user_id)
+        if user and not user.is_admin:
+            if user.employee_code not in employee_vacations:
+                employee_vacations[user.employee_code] = {
+                    'name': user.employee_name,
+                    'code': user.employee_code,
+                    'vacation_dates': []
+                }
+            employee_vacations[user.employee_code]['vacation_dates'].append(vacation.vacation_date)
+    
+    # Only create vacation table if there are vacations
+    if employee_vacations:
+        # Title for vacation table
+        ws.merge_cells(f'A{vacation_table_start_row}:F{vacation_table_start_row}')
+        vacation_title_cell = ws.cell(row=vacation_table_start_row, column=1)
+        vacation_title_cell.value = f"Vacation Details - From {start_date or 'Beginning'} To {end_date or 'End'}"
+        vacation_title_cell.font = Font(name='Calibri', size=14, bold=True, color='000000')
+        vacation_title_cell.alignment = center_alignment
+        
+        # Calculate all dates in the range
+        date_range = []
+        current_date = vacation_start_date
+        while current_date <= vacation_end_date:
+            date_range.append(current_date)
+            current_date += timedelta(days=1)
+        
+        # Create headers for vacation table
+        vacation_header_row = vacation_table_start_row + 2
+        
+        # First two columns: Employee Code and Name
+        code_cell = ws.cell(row=vacation_header_row, column=1)
+        code_cell.value = 'Employee Code'
+        code_cell.font = header_font
+        code_cell.fill = header_color
+        code_cell.alignment = center_alignment
+        code_cell.border = thin_border
+        
+        name_cell = ws.cell(row=vacation_header_row, column=2)
+        name_cell.value = 'Employee Name'
+        name_cell.font = header_font
+        name_cell.fill = header_color
+        name_cell.alignment = center_alignment
+        name_cell.border = thin_border
+        
+        # Date columns
+        for col_idx, vacation_date in enumerate(date_range, 3):
+            date_cell = ws.cell(row=vacation_header_row, column=col_idx)
+            date_cell.value = vacation_date.strftime('%Y-%m-%d')
+            date_cell.font = Font(name='Calibri', size=9, bold=True, color='FFFFFF')
+            date_cell.fill = header_color
+            date_cell.alignment = center_alignment
+            date_cell.border = thin_border
+            # Set narrow column width for dates
+            ws.column_dimensions[get_column_letter(col_idx)].width = 12
+        
+        # Sort employees by name
+        sorted_vacation_employees = sorted(employee_vacations.values(), key=lambda x: x['name'])
+        
+        # Write vacation data
+        vacation_data_row = vacation_header_row + 1
+        for emp in sorted_vacation_employees:
+            # Employee code
+            code_cell = ws.cell(row=vacation_data_row, column=1)
+            code_cell.value = emp['code']
+            code_cell.border = thin_border
+            code_cell.alignment = center_alignment
+            code_cell.font = data_font
+            
+            # Employee name
+            name_cell = ws.cell(row=vacation_data_row, column=2)
+            name_cell.value = emp['name']
+            name_cell.border = thin_border
+            name_cell.alignment = left_alignment
+            name_cell.font = data_font
+            
+            # Mark vacation dates
+            for col_idx, check_date in enumerate(date_range, 3):
+                date_cell = ws.cell(row=vacation_data_row, column=col_idx)
+                
+                if check_date in emp['vacation_dates']:
+                    date_cell.value = '✓'
+                    date_cell.fill = vacation_color
+                    date_cell.font = Font(name='Calibri', size=12, bold=True, color='FF8C00')
+                else:
+                    date_cell.value = ''
+                
+                date_cell.border = thin_border
+                date_cell.alignment = center_alignment
+            
+            vacation_data_row += 1
+        
+        # Add legend below vacation table
+        legend_row = vacation_data_row + 2
+        
+        legend_cell = ws.cell(row=legend_row, column=1)
+        legend_cell.value = 'Legend:'
+        legend_cell.font = Font(name='Calibri', size=10, bold=True)
+        
+        legend_vacation_cell = ws.cell(row=legend_row + 1, column=1)
+        legend_vacation_cell.value = '✓ = On Vacation'
+        legend_vacation_cell.fill = vacation_color
+        legend_vacation_cell.font = vacation_font
+        legend_vacation_cell.border = thin_border
+        legend_vacation_cell.alignment = center_alignment
+        
+        print(f"✅ Added vacation details table with {len(sorted_vacation_employees)} employees and {len(date_range)} days")
+    else:
+        print(f"ℹ️ No vacations found in the date range, skipping vacation details table")
     
     return ws
 
@@ -1938,151 +2086,3 @@ def api_update_comment(comment_id):
         
         comment = ReportComment.query.get_or_404(comment_id)
         
-        # Check if current user is the comment owner
-        if comment.user_id != session['user_id']:
-            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-        
-        data = request.get_json()
-        comment_text = data.get('comment_text', '').strip()
-        
-        if not comment_text:
-            return jsonify({'success': False, 'message': 'Comment text is required'}), 400
-        
-        comment.comment_text = comment_text
-        db.session.commit()
-        
-        comment_time_egypt = utc_to_egypt_time(comment.created_at)
-        
-        return jsonify({
-            'success': True,
-            'message': 'Comment updated successfully',
-            'comment': {
-                'id': comment.id,
-                'comment_text': comment.comment_text,
-                'commenter_name': comment.commenter.employee_name,
-                'created_at': comment_time_egypt.strftime('%Y-%m-%d %H:%M') if comment_time_egypt else ''
-            }
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@bp.route('/api/comments/<int:comment_id>', methods=['DELETE'])
-@admin_required
-def api_delete_comment(comment_id):
-    """Delete a comment"""
-    try:
-        from app.models import ReportComment
-        
-        comment = ReportComment.query.get_or_404(comment_id)
-        
-        # Check if current user is the comment owner
-        if comment.user_id != session['user_id']:
-            return jsonify({'success': False, 'message': 'Unauthorized'}), 403
-        
-        db.session.delete(comment)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Comment deleted successfully'
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@bp.route('/api/reports/<int:report_id>/status', methods=['PUT'])
-@admin_required
-def api_update_report_status(report_id):
-    """Update report status and mark as read"""
-    try:
-        from app.models import Notification
-        
-        report = Report.query.get_or_404(report_id)
-        data = request.get_json()
-        
-        new_status = data.get('status')
-        mark_as_read = data.get('mark_as_read', False)
-        
-        if new_status and new_status in ['new', 'under_review', 'reviewed', 'needs_revision']:
-            old_status = report.status
-            report.status = new_status
-            
-            # Create notification for status change
-            if old_status != new_status:
-                status_names = {
-                    'new': 'جديد',
-                    'under_review': 'تحت المراجعة',
-                    'reviewed': 'تمت المراجعة',
-                    'needs_revision': 'يحتاج تعديل'
-                }
-                
-                notification = Notification(
-                    user_id=report.user_id,
-                    title='تغيير حالة التقرير',
-                    message=f'تم تغيير حالة تقريرك من "{status_names.get(old_status, old_status)}" إلى "{status_names.get(new_status, new_status)}"',
-                    notification_type='status_change',
-                    related_report_id=report_id
-                )
-                db.session.add(notification)
-        
-        if mark_as_read:
-            report.is_read = True
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Report status updated successfully',
-            'status': report.status,
-            'is_read': report.is_read
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@bp.route('/api/notifications/unread-count', methods=['GET'])
-@admin_required
-def api_get_unread_notifications_count():
-    """Get count of unread notifications for admin"""
-    try:
-        from app.models import Notification
-        
-        # For admin, count new reports as notifications
-        new_reports_count = Report.query.filter_by(is_read=False).count()
-        
-        return jsonify({
-            'success': True,
-            'unread_count': new_reports_count
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-@bp.route('/api/reports/stats', methods=['GET'])
-@admin_required
-def api_get_reports_stats():
-    """Get reports statistics by status"""
-    try:
-        total_reports = Report.query.count()
-        new_reports = Report.query.filter_by(status='new').count()
-        under_review = Report.query.filter_by(status='under_review').count()
-        reviewed = Report.query.filter_by(status='reviewed').count()
-        needs_revision = Report.query.filter_by(status='needs_revision').count()
-        
-        return jsonify({
-            'success': True,
-            'stats': {
-                'total': total_reports,
-                'new': new_reports,
-                'under_review': under_review,
-                'reviewed': reviewed,
-                'needs_revision': needs_revision
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
