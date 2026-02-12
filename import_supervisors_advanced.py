@@ -283,7 +283,19 @@ class AdvancedSupervisorImporter:
             error_msg = f"خطأ في ربط العلاقات: {str(e)}"
             self.log_action('error', error_msg)
     
-    def validate_row_data(self, row):
+    def detect_supervisor_columns(self, df):
+        """اكتشاف كل الأعمدة التي تحتوي على كلمة supervisor أو SPVR"""
+        supervisor_cols = []
+        
+        for col in df.columns:
+            col_str = str(col).upper()
+            # البحث عن أي عمود يحتوي على SPVR أو SUPERVISOR
+            if 'SPVR' in col_str or 'SUPERVISOR' in col_str:
+                supervisor_cols.append(col)
+        
+        return supervisor_cols
+    
+    def validate_row_data(self, row, supervisor_columns):
         """التحقق من صحة بيانات الصف"""
         warnings = []
         
@@ -299,7 +311,6 @@ class AdvancedSupervisorImporter:
             warnings.append("اسم المنطقة مفقود")
         
         # التحقق من وجود مشرف واحد على الأقل
-        supervisor_columns = ['SPVR', 'SPVR.1', 'SPVR.2']
         has_supervisor = any(self.clean_name(row.get(col)) for col in supervisor_columns)
         
         if not has_supervisor:
@@ -317,8 +328,18 @@ class AdvancedSupervisorImporter:
             df = pd.read_excel(self.excel_file_path)
             print(f"تم العثور على {len(df)} صف")
             
-            # تحديد أعمدة المشرفين
-            supervisor_columns = ['SPVR', 'SPVR.1', 'SPVR.2']
+            # اكتشاف أعمدة المشرفين تلقائياً
+            supervisor_columns = self.detect_supervisor_columns(df)
+            
+            if not supervisor_columns:
+                print("⚠️ لم يتم العثور على أي أعمدة للمشرفين!")
+                print("تأكد من وجود أعمدة تحتوي على 'SPVR' أو 'Supervisor' في الملف")
+                return
+            
+            print(f"\n✅ تم اكتشاف {len(supervisor_columns)} عمود للمشرفين:")
+            for i, col in enumerate(supervisor_columns, 1):
+                print(f"  {i}. {col}")
+            print()
             
             # معالجة كل صف
             for index, row in df.iterrows():
@@ -326,7 +347,7 @@ class AdvancedSupervisorImporter:
                     self.stats['processed_rows'] += 1
                     
                     # التحقق من صحة البيانات
-                    warnings = self.validate_row_data(row)
+                    warnings = self.validate_row_data(row, supervisor_columns)
                     if warnings:
                         for warning in warnings:
                             self.log_action('warning', f"الصف {index + 1}: {warning}")
@@ -348,7 +369,7 @@ class AdvancedSupervisorImporter:
                         if not supervisor_name:
                             continue
                         
-                        print(f"\nمعالجة المشرف: {supervisor_name}")
+                        print(f"\nمعالجة المشرف: {supervisor_name} (من عمود: {col})")
                         
                         # إنشاء أو الحصول على المستخدم
                         user = self.get_or_create_user(supervisor_name)
