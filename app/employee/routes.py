@@ -234,24 +234,34 @@ def create_report():
                 try:
                     # Parse the selected date
                     selected_date = datetime.strptime(report_date_str, '%Y-%m-%d').date()
-                    # Use date only with time set to 00:00:00
+                    # Use date only with time set to 12:00:00 (noon) to avoid timezone issues
                     from datetime import time
-                    report_datetime = datetime.combine(selected_date, time(0, 0, 0))
-                    report_datetime = report_datetime.replace(tzinfo=egypt_tz)
+                    report_datetime = datetime.combine(selected_date, time(12, 0, 0))
+                    # Localize to Egypt timezone properly
+                    if hasattr(egypt_tz, 'localize'):
+                        report_datetime = egypt_tz.localize(report_datetime)
+                    else:
+                        report_datetime = report_datetime.replace(tzinfo=egypt_tz)
                     print(f"📅 Using selected date: {selected_date}")
                 except:
                     # If parsing fails, use business date
                     business_date = get_business_date(current_time)
                     from datetime import time
-                    report_datetime = datetime.combine(business_date, time(0, 0, 0))
-                    report_datetime = report_datetime.replace(tzinfo=egypt_tz)
+                    report_datetime = datetime.combine(business_date, time(12, 0, 0))
+                    if hasattr(egypt_tz, 'localize'):
+                        report_datetime = egypt_tz.localize(report_datetime)
+                    else:
+                        report_datetime = report_datetime.replace(tzinfo=egypt_tz)
                     print(f"⚠️ Date parsing failed, using business date: {business_date}")
             else:
                 # No date provided, use business date
                 business_date = get_business_date(current_time)
                 from datetime import time
-                report_datetime = datetime.combine(business_date, time(0, 0, 0))
-                report_datetime = report_datetime.replace(tzinfo=egypt_tz)
+                report_datetime = datetime.combine(business_date, time(12, 0, 0))
+                if hasattr(egypt_tz, 'localize'):
+                    report_datetime = egypt_tz.localize(report_datetime)
+                else:
+                    report_datetime = report_datetime.replace(tzinfo=egypt_tz)
                 print(f"📅 No date provided, using business date: {business_date}")
             
             print(f"⏰ Current time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -342,24 +352,34 @@ def submit_batch_reports():
             try:
                 # Parse the selected date (YYYY-MM-DD format)
                 selected_date = datetime.strptime(report_date_str, '%Y-%m-%d').date()
-                # Use date only with time set to 00:00:00
+                # Use date only with time set to 12:00:00 (noon) to avoid timezone issues
                 from datetime import time
-                report_date = datetime.combine(selected_date, time(0, 0, 0))
-                report_date = report_date.replace(tzinfo=egypt_tz)
+                report_date = datetime.combine(selected_date, time(12, 0, 0))
+                # Localize to Egypt timezone properly
+                if hasattr(egypt_tz, 'localize'):
+                    report_date = egypt_tz.localize(report_date)
+                else:
+                    report_date = report_date.replace(tzinfo=egypt_tz)
                 print(f"📅 Using selected date: {selected_date}")
             except:
                 # If parsing fails, use business date
                 business_date = get_business_date(current_time)
                 from datetime import time
-                report_date = datetime.combine(business_date, time(0, 0, 0))
-                report_date = report_date.replace(tzinfo=egypt_tz)
+                report_date = datetime.combine(business_date, time(12, 0, 0))
+                if hasattr(egypt_tz, 'localize'):
+                    report_date = egypt_tz.localize(report_date)
+                else:
+                    report_date = report_date.replace(tzinfo=egypt_tz)
                 print(f"⚠️ Date parsing failed, using business date: {business_date}")
         else:
             # No date provided, use business date
             business_date = get_business_date(current_time)
             from datetime import time
-            report_date = datetime.combine(business_date, time(0, 0, 0))
-            report_date = report_date.replace(tzinfo=egypt_tz)
+            report_date = datetime.combine(business_date, time(12, 0, 0))
+            if hasattr(egypt_tz, 'localize'):
+                report_date = egypt_tz.localize(report_date)
+            else:
+                report_date = report_date.replace(tzinfo=egypt_tz)
             print(f"📅 No date provided, using business date: {business_date}")
         
         print(f"⏰ Current time: {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
