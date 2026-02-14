@@ -58,8 +58,13 @@ def parse_date_filter(date_str, is_end_date=False):
 def get_business_date(current_datetime=None):
     """
     Get the business date based on 6 AM cutoff.
-    Reports submitted between 12 AM and 6 AM belong to the previous day.
-    Reports submitted after 6 AM belong to the current day.
+    Business day starts at 6 AM and ends at 5:59 AM the next day.
+    
+    Examples:
+        - 2024-02-14 05:59 AM -> 2024-02-13 (previous day)
+        - 2024-02-14 06:00 AM -> 2024-02-14 (current day)
+        - 2024-02-14 11:00 PM -> 2024-02-14 (current day, same business day)
+        - 2024-02-15 02:00 AM -> 2024-02-14 (previous day, still same business day)
     
     Args:
         current_datetime: datetime object (Egypt timezone). If None, uses current time.
@@ -72,11 +77,12 @@ def get_business_date(current_datetime=None):
         egypt_tz = get_egypt_timezone()
         current_datetime = datetime.now(egypt_tz)
     
-    # If time is before 6 AM, use previous day
+    # If time is before 6 AM (00:00 to 05:59), use previous day
     if current_datetime.hour < 6:
         from datetime import timedelta
         business_date = (current_datetime - timedelta(days=1)).date()
     else:
+        # If time is 6 AM or later (06:00 to 23:59), use current day
         business_date = current_datetime.date()
     
     return business_date
@@ -280,7 +286,13 @@ def create_report():
             flash(f'Error submitting report: {str(e)}', 'error')
             return redirect(url_for('employee.create_report'))
     
-    return render_template('employee/report_form.html', user=user)
+    # Calculate business date for the form default
+    egypt_tz = get_egypt_timezone()
+    current_time = datetime.now(egypt_tz)
+    business_date = get_business_date(current_time)
+    business_date_str = business_date.strftime('%Y-%m-%d')
+    
+    return render_template('employee/report_form.html', user=user, default_date=business_date_str)
 
 @bp.route('/batch-reports', methods=['GET'])
 @login_required
@@ -293,7 +305,13 @@ def batch_reports():
         flash('Admins cannot create reports. This page is for employees only.', 'error')
         return redirect(url_for('admin.dashboard'))
     
-    return render_template('employee/batch_reports.html', user=user)
+    # Calculate business date for the form default
+    egypt_tz = get_egypt_timezone()
+    current_time = datetime.now(egypt_tz)
+    business_date = get_business_date(current_time)
+    business_date_str = business_date.strftime('%Y-%m-%d')
+    
+    return render_template('employee/batch_reports.html', user=user, default_date=business_date_str)
 
 @bp.route('/submit-batch-reports', methods=['POST'])
 @login_required
