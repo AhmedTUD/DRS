@@ -1336,6 +1336,14 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
             has_vacation = vacation_today is not None
             employee_stats[employee.employee_code]['has_vacation'] = has_vacation
             
+            # Also get all vacations in range for the vacation details table
+            vacations = Vacation.query.filter(
+                Vacation.user_id == employee.id,
+                Vacation.vacation_date >= vacation_start_date,
+                Vacation.vacation_date <= vacation_end_date
+            ).all()
+            employee_stats[employee.employee_code]['vacations'] = vacations
+            
             if has_vacation:
                 print(f"🏖️ Employee {employee.employee_name} ({employee.employee_code}) is on vacation TODAY ({selected_date})")
             else:
