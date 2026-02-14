@@ -234,20 +234,23 @@ def create_report():
                 try:
                     # Parse the selected date
                     selected_date = datetime.strptime(report_date_str, '%Y-%m-%d').date()
-                    # Combine with current time
-                    report_datetime = datetime.combine(selected_date, current_time.time())
+                    # Use date only with time set to 00:00:00
+                    from datetime import time
+                    report_datetime = datetime.combine(selected_date, time(0, 0, 0))
                     report_datetime = report_datetime.replace(tzinfo=egypt_tz)
                     print(f"📅 Using selected date: {selected_date}")
                 except:
                     # If parsing fails, use business date
                     business_date = get_business_date(current_time)
-                    report_datetime = datetime.combine(business_date, current_time.time())
+                    from datetime import time
+                    report_datetime = datetime.combine(business_date, time(0, 0, 0))
                     report_datetime = report_datetime.replace(tzinfo=egypt_tz)
                     print(f"⚠️ Date parsing failed, using business date: {business_date}")
             else:
                 # No date provided, use business date
                 business_date = get_business_date(current_time)
-                report_datetime = datetime.combine(business_date, current_time.time())
+                from datetime import time
+                report_datetime = datetime.combine(business_date, time(0, 0, 0))
                 report_datetime = report_datetime.replace(tzinfo=egypt_tz)
                 print(f"📅 No date provided, using business date: {business_date}")
             
@@ -339,20 +342,23 @@ def submit_batch_reports():
             try:
                 # Parse the selected date (YYYY-MM-DD format)
                 selected_date = datetime.strptime(report_date_str, '%Y-%m-%d').date()
-                # Combine with current time
-                report_date = datetime.combine(selected_date, current_time.time())
+                # Use date only with time set to 00:00:00
+                from datetime import time
+                report_date = datetime.combine(selected_date, time(0, 0, 0))
                 report_date = report_date.replace(tzinfo=egypt_tz)
                 print(f"📅 Using selected date: {selected_date}")
             except:
                 # If parsing fails, use business date
                 business_date = get_business_date(current_time)
-                report_date = datetime.combine(business_date, current_time.time())
+                from datetime import time
+                report_date = datetime.combine(business_date, time(0, 0, 0))
                 report_date = report_date.replace(tzinfo=egypt_tz)
                 print(f"⚠️ Date parsing failed, using business date: {business_date}")
         else:
             # No date provided, use business date
             business_date = get_business_date(current_time)
-            report_date = datetime.combine(business_date, current_time.time())
+            from datetime import time
+            report_date = datetime.combine(business_date, time(0, 0, 0))
             report_date = report_date.replace(tzinfo=egypt_tz)
             print(f"📅 No date provided, using business date: {business_date}")
         
