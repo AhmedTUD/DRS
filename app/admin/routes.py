@@ -1014,7 +1014,7 @@ def api_reports():
             'store_name': report.store.name,
             'store_code': report.store.code,
             'area': report.area.name,
-            'report_date': report_date_local.strftime('%Y-%m-%d %H:%M') if report_date_local else '',
+            'report_date': report_date_local.strftime('%Y-%m-%d') if report_date_local else '',
             'created_at': created_at_local.strftime('%Y-%m-%d %H:%M') if created_at_local else '',
             'status': report.status if hasattr(report, 'status') else 'new',
             'is_read': report.is_read if hasattr(report, 'is_read') else False,
