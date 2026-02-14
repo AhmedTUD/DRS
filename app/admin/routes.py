@@ -1327,21 +1327,19 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
     # Now check vacations for ALL employees (both with and without reports)
     for employee in all_employees:
         if employee.employee_code in employee_stats:
-            # Check if employee has vacation in the date range - GET ALL vacations, not just first
-            vacations = Vacation.query.filter(
+            # Check if employee has vacation TODAY (selected_date) only
+            vacation_today = Vacation.query.filter(
                 Vacation.user_id == employee.id,
-                Vacation.vacation_date >= vacation_start_date,
-                Vacation.vacation_date <= vacation_end_date
-            ).all()
+                Vacation.vacation_date == selected_date
+            ).first()
             
-            has_vacation = len(vacations) > 0
+            has_vacation = vacation_today is not None
             employee_stats[employee.employee_code]['has_vacation'] = has_vacation
             
             if has_vacation:
-                vacation_dates = [v.vacation_date.strftime('%Y-%m-%d') for v in vacations]
-                print(f"🏖️ Found {len(vacations)} vacation(s) for {employee.employee_name} ({employee.employee_code}): {', '.join(vacation_dates)}")
+                print(f"🏖️ Employee {employee.employee_name} ({employee.employee_code}) is on vacation TODAY ({selected_date})")
             else:
-                print(f"💼 No vacation found for {employee.employee_name} ({employee.employee_code})")
+                print(f"💼 Employee {employee.employee_name} ({employee.employee_code}) is NOT on vacation today")
     
     # Sort employees by name
     sorted_employees = sorted(employee_stats.values(), key=lambda x: x['name'])
