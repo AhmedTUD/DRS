@@ -290,26 +290,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitAllBtn = document.getElementById('submit_all_btn');
     const clearAllBtn = document.getElementById('clear_all_btn');
     
-    // Set default business date (considering 6 AM cutoff)
-    const now = new Date();
-    const hour = now.getHours();
+    // Use server-provided business date instead of calculating on client side
+    // This ensures timezone consistency and correct business date calculation
+    const defaultDate = '{{ default_date }}';
+    document.getElementById('batch_date_picker').value = defaultDate;
     
-    // If before 6 AM, use previous day
-    let businessDate = new Date(now);
-    if (hour < 6) {
-        businessDate.setDate(businessDate.getDate() - 1);
-    }
-    
-    // Format date as YYYY-MM-DD for date input
-    const year = businessDate.getFullYear();
-    const month = String(businessDate.getMonth() + 1).padStart(2, '0');
-    const day = String(businessDate.getDate()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`;
-    
-    document.getElementById('batch_date_picker').value = formattedDate;
-    
-    console.log('Current time:', now.toLocaleString());
-    console.log('Business date set to:', formattedDate);
+    console.log('Business date set to:', defaultDate);
+    console.log('(Calculated on server with Egypt timezone and 6 AM cutoff)');
     
     // Add first report automatically
     addReport();
