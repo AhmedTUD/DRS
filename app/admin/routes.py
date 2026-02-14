@@ -1327,13 +1327,14 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
     # Now check vacations for ALL employees (both with and without reports)
     for employee in all_employees:
         if employee.employee_code in employee_stats:
-            # Check if employee has vacation TODAY (selected_date) only
-            vacation_today = Vacation.query.filter(
+            # Check if employee has vacation on the START DATE (the selected/target date)
+            # This is the date we're checking the status for
+            vacation_on_target_date = Vacation.query.filter(
                 Vacation.user_id == employee.id,
-                Vacation.vacation_date == selected_date
+                Vacation.vacation_date == vacation_start_date
             ).first()
             
-            has_vacation = vacation_today is not None
+            has_vacation = vacation_on_target_date is not None
             employee_stats[employee.employee_code]['has_vacation'] = has_vacation
             
             # Also get all vacations in range for the vacation details table
@@ -1345,9 +1346,9 @@ def _create_summary_sheet(ws, spvr_reports, start_date, end_date):
             employee_stats[employee.employee_code]['vacations'] = vacations
             
             if has_vacation:
-                print(f"🏖️ Employee {employee.employee_name} ({employee.employee_code}) is on vacation TODAY ({selected_date})")
+                print(f"🏖️ Employee {employee.employee_name} ({employee.employee_code}) is on vacation on {vacation_start_date}")
             else:
-                print(f"💼 Employee {employee.employee_name} ({employee.employee_code}) is NOT on vacation today")
+                print(f"💼 Employee {employee.employee_name} ({employee.employee_code}) is NOT on vacation on {vacation_start_date}")
     
     # Sort employees by name
     sorted_employees = sorted(employee_stats.values(), key=lambda x: x['name'])
